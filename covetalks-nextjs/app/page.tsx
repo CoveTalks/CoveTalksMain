@@ -29,7 +29,7 @@ export default function HomePage() {
                   </Button>
                 </Link>
                 <Link href="/how-it-works">
-                  <Button size="xl" variant="outline" className="border-white text-white hover:bg-white hover:text-deep">
+                  <Button size="xl" variant="outline" className="border-white text-accent hover:bg-white hover:text-deep">
                     Learn How It Works
                   </Button>
                 </Link>
@@ -237,7 +237,7 @@ export default function HomePage() {
 
             <div className="relative">
               <Image
-                src="/images/dashboard-preview.jpg"
+                src="/images/dashboard-preview.svg"
                 alt="CoveTalks Dashboard"
                 width={600}
                 height={450}
@@ -332,7 +332,7 @@ export default function HomePage() {
               </Button>
             </Link>
             <Link href="/register?type=organization">
-              <Button size="xl" variant="outline" className="border-white text-white hover:bg-white hover:text-deep">
+              <Button size="xl" variant="outline" className="border-white text-accent hover:bg-white hover:text-deep">
                 Join as an Organization
               </Button>
             </Link>

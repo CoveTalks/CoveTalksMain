@@ -11,7 +11,7 @@ const navigation = [
   { name: 'Home', href: '/' },
   { name: 'Find Speakers', href: '/speakers' },
   { name: 'Pricing', href: '/pricing' },
-  { name: 'Register', href: '/register' },
+  { name: 'How It Works', href: '/how-it-works' },
   { name: 'Contact', href: '/contact' },
 ]
 
@@ -42,7 +42,7 @@ export default function Header() {
             <Link href="/" className="flex items-center space-x-2">
               <div className="relative h-10 w-32">
                 <Image
-                  src="/images/logo.svg"
+                  src="/images/CoveTalks_logo.svg"
                   alt="CoveTalks"
                   fill
                   className="object-contain"

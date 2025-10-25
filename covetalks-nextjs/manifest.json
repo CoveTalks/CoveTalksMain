@@ -1,0 +1,22 @@
+{
+  "name": "CoveTalks",
+  "short_name": "CoveTalks",
+  "description": "Connect professional speakers with organizations",
+  "theme_color": "#155487",
+  "background_color": "#f8f9fa",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/images/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

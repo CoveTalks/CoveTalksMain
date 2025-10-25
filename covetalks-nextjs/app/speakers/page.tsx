@@ -1,284 +1,398 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Search, MapPin, Star, Filter, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import Image from 'next/image'
-import Link from 'next/link'
-import { Star, MapPin, DollarSign, Filter, Search, ChevronDown } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
-// This would normally come from Supabase
-const mockSpeakers = [
-  {
-    id: '1',
-    name: 'Dr. Sarah Johnson',
-    title: 'Leadership & Innovation Expert',
-    bio: 'Transforming organizations through innovative leadership strategies for over 15 years.',
-    location: 'New York, NY',
-    specialties: ['Leadership', 'Innovation', 'Change Management'],
-    rating: 4.9,
-    reviewCount: 127,
-    priceRange: '$5,000 - $10,000',
-    image: '/images/speaker1.jpg',
-    verified: true,
-    featured: true,
-  },
-  {
-    id: '2',
-    name: 'Michael Chen',
-    title: 'Technology Futurist',
-    bio: 'Helping companies navigate digital transformation and emerging technologies.',
-    location: 'San Francisco, CA',
-    specialties: ['AI/ML', 'Digital Transformation', 'Future of Work'],
-    rating: 4.8,
-    reviewCount: 89,
-    priceRange: '$3,000 - $7,000',
-    image: '/images/speaker2.jpg',
-    verified: true,
-    featured: false,
-  },
-  {
-    id: '3',
-    name: 'Emily Rodriguez',
-    title: 'Diversity & Inclusion Strategist',
-    bio: 'Building inclusive workplaces that drive innovation and employee engagement.',
-    location: 'Chicago, IL',
-    specialties: ['Diversity', 'Inclusion', 'Company Culture'],
-    rating: 5.0,
-    reviewCount: 63,
-    priceRange: '$2,500 - $5,000',
-    image: '/images/speaker3.jpg',
-    verified: true,
-    featured: false,
-  },
-  // Add more mock speakers as needed
-]
+interface Speaker {
+  id: string
+  name: string
+  bio: string
+  location: string
+  specialties: string[]
+  profile_image_url: string
+  average_rating: number
+  total_reviews: number
+  website?: string
+}
 
-const specialtyOptions = [
+const SPECIALTIES = [
   'Leadership',
   'Innovation',
   'Technology',
+  'Business Strategy',
   'Marketing',
   'Sales',
+  'Personal Development',
+  'Health & Wellness',
+  'Diversity & Inclusion',
+  'Entrepreneurship',
   'Finance',
-  'HR',
-  'Diversity',
-  'Wellness',
-  'Motivation',
-]
-
-const locationOptions = [
-  'Any Location',
-  'Virtual Only',
-  'United States',
-  'Europe',
-  'Asia',
-  'Australia',
-]
-
-const priceRanges = [
-  'Any Budget',
-  'Under $1,000',
-  '$1,000 - $2,500',
-  '$2,500 - $5,000',
-  '$5,000 - $10,000',
-  '$10,000+',
+  'Education'
 ]
 
 export default function SpeakersPage() {
+  const [speakers, setSpeakers] = useState<Speaker[]>([])
+  const [loading, setLoading] = useState(true)
+  const [total, setTotal] = useState(0)
+  const [filters, setFilters] = useState({
+    search: '',
+    specialties: [] as string[],
+    location: '',
+    minRating: 0,
+    offset: 0,
+    limit: 12
+  })
+  const [showFilters, setShowFilters] = useState(false)
+
+  const totalPages = Math.ceil(total / filters.limit)
+  const currentPage = Math.floor(filters.offset / filters.limit) + 1
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.covetalks.com'
+
+  useEffect(() => {
+    fetchSpeakers()
+  }, [filters.offset, filters.specialties, filters.minRating])
+
+  const fetchSpeakers = async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({
+        ...(filters.search && { search: filters.search }),
+        ...(filters.specialties.length > 0 && { specialties: filters.specialties.join(',') }),
+        ...(filters.location && { location: filters.location }),
+        ...(filters.minRating > 0 && { minRating: filters.minRating.toString() }),
+        limit: filters.limit.toString(),
+        offset: filters.offset.toString()
+      })
+
+      const response = await fetch(`/api/speakers?${params}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setSpeakers(data.speakers)
+        setTotal(data.total)
+      } else {
+        console.error('Failed to fetch speakers:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching speakers:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setFilters({ ...filters, offset: 0 })
+    fetchSpeakers()
+  }
+
+  const toggleSpecialty = (specialty: string) => {
+    setFilters(prev => ({
+      ...prev,
+      specialties: prev.specialties.includes(specialty)
+        ? prev.specialties.filter(s => s !== specialty)
+        : [...prev.specialties, specialty],
+      offset: 0
+    }))
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setFilters(prev => ({
+      ...prev,
+      offset: (newPage - 1) * prev.limit
+    }))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }).map((_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${
+          i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+        }`}
+      />
+    ))
+  }
+
   return (
-    <div className="min-h-screen bg-foam">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-deep to-calm py-16">
-        <div className="container">
-          <h1 className="text-4xl font-bold text-white mb-4">Find Your Perfect Speaker</h1>
-          <p className="text-xl text-white/90 max-w-2xl">
-            Browse our curated network of professional speakers ready to inspire, educate, and transform your next event.
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Find Your Perfect Speaker
+          </h1>
+          <p className="text-xl text-gray-600 mb-4">
+            Browse our curated network of professional speakers
+          </p>
+          <p className="text-sm text-gray-500">
+            Sign up for a free account to view full profiles and contact speakers
           </p>
         </div>
-      </section>
 
-      {/* Filters Section */}
-      <section className="bg-white border-b sticky top-16 z-40 shadow-sm">
-        <div className="container py-4">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search Bar */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+        {/* Search Bar */}
+        <form onSubmit={handleSearch} className="mb-8">
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search speakers by name or expertise..."
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+            >
+              <Filter className="h-5 w-5" />
+              Filters
+            </button>
+            <button
+              type="submit"
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Search
+            </button>
+          </div>
+        </form>
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Specialties */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Specialties</h3>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {SPECIALTIES.map(specialty => (
+                    <label key={specialty} className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.specialties.includes(specialty)}
+                        onChange={() => toggleSpecialty(specialty)}
+                        className="mr-2 rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700">{specialty}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Location */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Location</h3>
                 <input
                   type="text"
-                  placeholder="Search by name, topic, or keyword..."
-                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="City, State, or Country"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  value={filters.location}
+                  onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                 />
               </div>
-            </div>
 
-            {/* Filter Dropdowns */}
-            <div className="flex gap-2">
-              <div className="relative">
-                <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
-                  <Filter className="h-4 w-4" />
-                  <span>Specialty</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
+              {/* Rating */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Minimum Rating</h3>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  value={filters.minRating}
+                  onChange={(e) => setFilters({ ...filters, minRating: parseFloat(e.target.value), offset: 0 })}
+                >
+                  <option value="0">Any Rating</option>
+                  <option value="3">3+ Stars</option>
+                  <option value="4">4+ Stars</option>
+                  <option value="4.5">4.5+ Stars</option>
+                </select>
               </div>
-
-              <div className="relative">
-                <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
-                  <MapPin className="h-4 w-4" />
-                  <span>Location</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="relative">
-                <button className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50">
-                  <DollarSign className="h-4 w-4" />
-                  <span>Budget</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              </div>
-
-              <Button variant="outline">Clear Filters</Button>
             </div>
           </div>
+        )}
 
-          {/* Active Filters */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-              Leadership ×
-            </span>
-            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-              United States ×
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Results Section */}
-      <section className="container py-8">
-        <div className="flex justify-between items-center mb-6">
+        {/* Results Count */}
+        <div className="mb-6">
           <p className="text-gray-600">
-            Showing <span className="font-semibold">1-12</span> of <span className="font-semibold">127</span> speakers
+            Showing {speakers.length > 0 ? filters.offset + 1 : 0} - {Math.min(filters.offset + filters.limit, total)} of {total} speakers
           </p>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Sort by:</span>
-            <select className="border rounded-lg px-3 py-1 text-sm">
-              <option>Relevance</option>
-              <option>Rating</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Most Reviews</option>
-            </select>
-          </div>
         </div>
 
-        {/* Speaker Cards Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockSpeakers.map((speaker) => (
-            <Link key={speaker.id} href={`/speakers/${speaker.id}`}>
-              <div className="bg-white rounded-xl shadow-soft hover:shadow-hard transition-shadow cursor-pointer h-full">
-                {speaker.featured && (
-                  <div className="bg-accent text-black text-xs font-semibold px-3 py-1 rounded-t-xl text-center">
-                    FEATURED SPEAKER
-                  </div>
-                )}
+        {/* Speakers Grid */}
+        {loading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+                <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        ) : speakers.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {speakers.map((speaker) => (
+              <div key={speaker.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow">
                 <div className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="relative h-20 w-20 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                      <Image
-                        src={speaker.image}
+                  {/* Profile Image */}
+                  <div className="flex justify-center mb-4">
+                    {speaker.profile_image_url ? (
+                      <img
+                        src={speaker.profile_image_url}
                         alt={speaker.name}
-                        fill
-                        className="object-cover"
+                        className="h-32 w-32 rounded-full object-cover"
                       />
+                    ) : (
+                      <div className="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-3xl text-gray-400">
+                          {speaker.name?.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Speaker Info */}
+                  <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+                    {speaker.name}
+                  </h3>
+
+                  {/* Location */}
+                  {speaker.location && (
+                    <div className="flex items-center justify-center text-gray-600 mb-2">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      <span className="text-sm">{speaker.location}</span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg">{speaker.name}</h3>
-                          <p className="text-sm text-gray-600">{speaker.title}</p>
-                        </div>
-                        {speaker.verified && (
-                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                            Verified
+                  )}
+
+                  {/* Rating */}
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="flex mr-2">
+                      {renderStars(speaker.average_rating || 0)}
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      ({speaker.total_reviews || 0})
+                    </span>
+                  </div>
+
+                  {/* Bio */}
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                    {speaker.bio}
+                  </p>
+
+                  {/* Specialties */}
+                  {speaker.specialties && speaker.specialties.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex flex-wrap gap-2">
+                        {speaker.specialties.slice(0, 3).map((specialty) => (
+                          <span
+                            key={specialty}
+                            className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                          >
+                            {specialty}
+                          </span>
+                        ))}
+                        {speaker.specialties.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                            +{speaker.specialties.length - 3}
                           </span>
                         )}
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  <p className="text-gray-700 mt-4 line-clamp-2">{speaker.bio}</p>
-
-                  <div className="flex items-center gap-4 mt-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600">{speaker.location}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600">{speaker.priceRange}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {speaker.specialties.slice(0, 3).map((specialty) => (
-                      <span
-                        key={specialty}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                      >
-                        {specialty}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-accent text-accent" />
-                        <span className="font-semibold">{speaker.rating}</span>
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        ({speaker.reviewCount} reviews)
-                      </span>
-                    </div>
-                    <Button size="sm" variant="ghost" className="text-primary hover:text-primary/80">
-                      View Profile →
-                    </Button>
-                  </div>
+                  {/* View Profile Button - Now points to app subdomain */}
+                  <a
+                    href={`${appUrl}/speakers/${speaker.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    View Full Profile
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
                 </div>
               </div>
-            </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">
+              No speakers found matching your criteria.
+            </p>
+            <button
+              onClick={() => {
+                setFilters({
+                  search: '',
+                  specialties: [],
+                  location: '',
+                  minRating: 0,
+                  offset: 0,
+                  limit: 12
+                })
+              }}
+              className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
 
         {/* Pagination */}
-        <div className="flex justify-center mt-12">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">Previous</Button>
-            <Button variant="default" size="sm">1</Button>
-            <Button variant="outline" size="sm">2</Button>
-            <Button variant="outline" size="sm">3</Button>
-            <span className="px-3 text-gray-500">...</span>
-            <Button variant="outline" size="sm">11</Button>
-            <Button variant="outline" size="sm">Next</Button>
-          </div>
-        </div>
-      </section>
+        {totalPages > 1 && (
+          <div className="mt-12 flex justify-center">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
 
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-deep to-calm py-16 mt-16">
-        <div className="container text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Are You a Professional Speaker?
-          </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Join our network of expert speakers and connect with organizations looking for your expertise.
-          </p>
-          <Link href="/register?type=speaker">
-            <Button size="xl" className="bg-white text-deep hover:bg-gray-100">
-              Join as a Speaker
-            </Button>
-          </Link>
-        </div>
-      </section>
+              {/* Page Numbers */}
+              <div className="flex gap-1">
+                {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i
+                  } else {
+                    pageNum = currentPage - 2 + i
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-4 py-2 rounded-lg ${
+                        currentPage === pageNum
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

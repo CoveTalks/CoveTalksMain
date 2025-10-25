@@ -52,7 +52,7 @@ export default function Footer() {
             <Link href="/" className="flex items-center">
               <div className="relative h-10 w-32">
                 <Image
-                  src="/images/logo-white.svg"
+                  src="/images/CoveTalks_logo_white.png"
                   alt="CoveTalks"
                   fill
                   className="object-contain"

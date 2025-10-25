@@ -1,31 +1,37 @@
-import { Check, Star, Users, User, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
+import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import PricingClient from './pricing-client'
 
-// Server Component - fetches data on server
-async function getPricingData() {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-11-20.acacia',
-  })
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-11-20.acacia',
+})
 
+export async function GET() {
   try {
-    // Fetch products and prices
-    const [products, prices] = await Promise.all([
-      stripe.products.list({ active: true, limit: 100 }),
-      stripe.prices.list({ active: true, limit: 100 })
-    ])
+    // Fetch all active products
+    const products = await stripe.products.list({
+      active: true,
+      limit: 100,
+    })
 
-    // Map products with prices
+    // Fetch all active prices
+    const prices = await stripe.prices.list({
+      active: true,
+      limit: 100,
+    })
+
+    // Map products with their prices
     const productsWithPrices = products.data.map(product => {
+      // Find prices for this product
       const productPrices = prices.data.filter(price => {
         const productId = typeof price.product === 'object' ? price.product.id : price.product
         return productId === product.id
       })
 
+      // Get monthly and yearly prices
       const monthlyPrice = productPrices.find(p => p.recurring?.interval === 'month')
       const yearlyPrice = productPrices.find(p => p.recurring?.interval === 'year')
       
+      // Parse features from metadata
       let features = []
       if (product.metadata.features) {
         try {
@@ -60,36 +66,23 @@ async function getPricingData() {
       }
     })
 
-    // Sort and group
+    // Sort by order
     productsWithPrices.sort((a, b) => a.order - b.order)
+
+    // Group by user type
+    const speakerPlans = productsWithPrices.filter(p => p.userType === 'speaker')
+    const organizationPlans = productsWithPrices.filter(p => p.userType === 'organization')
+
+    return NextResponse.json({
+      speaker: speakerPlans,
+      organization: organizationPlans,
+    })
     
-    return {
-      speaker: productsWithPrices.filter(p => p.userType === 'speaker'),
-      organization: productsWithPrices.filter(p => p.userType === 'organization'),
-    }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching Stripe prices:', error)
-    return null
-  }
-}
-
-export default async function PricingPage() {
-  const pricingData = await getPricingData()
-
-  // If no data, show error state
-  if (!pricingData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-foam to-white flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Unable to load pricing at this time</p>
-          <Link href="/" className="text-deep hover:underline">
-            Return to Home
-          </Link>
-        </div>
-      </div>
+    return NextResponse.json(
+      { error: 'Failed to fetch pricing data' },
+      { status: 500 }
     )
   }
-
-  // Pass data to client component for interactivity
-  return <PricingClient initialData={pricingData} />
 }
