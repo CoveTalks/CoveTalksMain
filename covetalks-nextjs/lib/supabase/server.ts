@@ -1,7 +1,9 @@
-import { cookies } from 'next/headers'
+// lib/supabase/server.ts
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
-export const createServerSupabaseClient = () => {
+// Main export - use this consistently across all server components
+export function createServerSupabaseClient() {
   const cookieStore = cookies()
 
   return createServerClient(
@@ -16,21 +18,23 @@ export const createServerSupabaseClient = () => {
           try {
             cookieStore.set({ name, value, ...options })
           } catch (error) {
-            // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Handle the error when called from a Server Component
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options })
           } catch (error) {
-            // The `delete` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Handle the error when called from a Server Component
           }
-        },
-      },
+        }
+      }
     }
   )
 }
+
+// Alias for backwards compatibility if needed
+export const createClient = createServerSupabaseClient
+
+// Optional: Create a typed client if you have database types
+export type SupabaseClient = ReturnType<typeof createServerSupabaseClient>

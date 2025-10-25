@@ -1,6 +1,7 @@
+// app/help/category/[category]/page.tsx
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'  // Use your existing function
+import { createServerSupabaseClient } from '@/lib/supabase/server'  // Fixed import
 import HelpCategoryClient from './category-client'
 
 interface PageProps {
@@ -9,6 +10,7 @@ interface PageProps {
   }
 }
 
+// Updated category data to match your database schema exactly
 const categoryData: Record<string, { title: string; description: string }> = {
   getting_started: {
     title: 'Getting Started',
@@ -21,6 +23,14 @@ const categoryData: Record<string, { title: string; description: string }> = {
   billing: {
     title: 'Billing & Subscriptions',
     description: 'Everything about pricing, subscriptions, payments, and billing management.'
+  },
+  payments: {
+    title: 'Payments',
+    description: 'Learn about payment methods, processing, and transaction management.'
+  },
+  account: {
+    title: 'Account Management',
+    description: 'Manage your account settings, profile, and preferences.'
   },
   technical: {
     title: 'Technical Support',
@@ -71,21 +81,22 @@ interface HelpArticle {
   excerpt: string
   category: string
   author_id: string | null
-  is_popular: boolean  // Changed from is_featured
-  is_new: boolean  // Added this field
+  is_popular: boolean
+  is_new: boolean
   published: boolean
   view_count: number
   helpful_count: number
-  not_helpful_count: number  // Added this field
+  not_helpful_count: number
   tags: string[] | null
   meta_description: string | null
   created_at: string
   updated_at: string
-  search_vector?: any  // Added for full-text search
+  search_vector?: any  // For full-text search
 }
 
-async function getCategoryArticles(category: string) {
-  const supabase = createClient()  // Use your existing function
+async function getCategoryArticles(category: string): Promise<HelpArticle[]> {
+  // Fixed: Use the correct import name
+  const supabase = createServerSupabaseClient()
   
   console.log('Fetching articles for category:', category)  // Debug log
   
@@ -108,8 +119,10 @@ async function getCategoryArticles(category: string) {
 }
 
 export default async function CategoryPage({ params }: PageProps) {
-  // Check if category exists
+  // Validate category exists
   if (!categoryData[params.category]) {
+    console.log(`Category not found: ${params.category}`)
+    console.log('Available categories:', Object.keys(categoryData))
     notFound()
   }
 

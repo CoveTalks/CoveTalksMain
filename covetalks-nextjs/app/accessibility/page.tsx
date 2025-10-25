@@ -1,5 +1,6 @@
+// app/accessibility/page.tsx
 import { Eye, Keyboard, Monitor, Headphones, Users, Mail } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import AccessibilityClient from './accessibility-client'
 
 export default function AccessibilityPage() {
   return (
@@ -81,7 +82,7 @@ export default function AccessibilityPage() {
                     <h3 className="text-lg font-semibold">Visual Design</h3>
                   </div>
                   <p className="text-gray-600">
-                    We maintain sufficient color contrast ratios and don't rely solely on color to convey 
+                    We maintain sufficient color contrast ratios and don&apos;t rely solely on color to convey 
                     information. Text can be resized up to 200% without loss of functionality.
                   </p>
                 </div>
@@ -222,15 +223,8 @@ export default function AccessibilityPage() {
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={() => window.print()}>
-                Print This Statement
-              </Button>
-              <a href="mailto:accessibility@covetalks.com">
-                <Button variant="outline">Report an Issue</Button>
-              </a>
-            </div>
+            {/* Action Buttons - Using Client Component */}
+            <AccessibilityClient />
           </div>
         </div>
       </section>
