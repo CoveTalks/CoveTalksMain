@@ -145,28 +145,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Contact Info */}
-        <div className="mt-12 border-t border-gray-800 pt-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex items-center space-x-3">
-              <Mail className="h-5 w-5 text-accent" />
-              <a href="mailto:hello@covetalks.com" className="text-sm hover:text-white transition-colors">
-                hello@covetalks.com
-              </a>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Phone className="h-5 w-5 text-accent" />
-              <a href="tel:+1234567890" className="text-sm hover:text-white transition-colors">
-                +1 (234) 567-890
-              </a>
-            </div>
-            <div className="flex items-center space-x-3">
-              <MapPin className="h-5 w-5 text-accent" />
-              <span className="text-sm">Phoenix, Arizona, USA</span>
-            </div>
-          </div>
-        </div>
-
         {/* Bottom Bar */}
         <div className="mt-8 border-t border-gray-800 pt-8 md:flex md:items-center md:justify-between">
           <p className="text-xs leading-5 md:order-1">

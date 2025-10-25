@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Search, BookOpen, Mic, Building, CreditCard, Settings, ChevronRight, User, Rocket, FileText, Wrench, Mail, MessageCircle, Clock, TrendingUp } from 'lucide-react'
+import { Search, BookOpen, Mic, Building, CreditCard, Settings, ChevronRight, User, Rocket, FileText, Mail, MessageCircle, Clock, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,10 +15,12 @@ interface HelpArticle {
   excerpt: string
   category: string
   author_id: string | null
-  is_featured: boolean  // Keep as is_featured
-  published: boolean  // Changed from is_published
+  is_popular: boolean  // Changed from is_featured
+  is_new: boolean  // Added
+  published: boolean
   view_count: number
   helpful_count: number
+  not_helpful_count: number  // Added
   tags: string[] | null
   meta_description: string | null
   created_at: string
@@ -31,17 +33,17 @@ interface HelpClientProps {
 }
 
 const categoryData = {
-  speakers: {
-    icon: <Mic className="w-6 h-6" />,
-    title: 'For Speakers',
-    description: 'Learn how to create your profile, apply to opportunities, and grow your speaking career.',
-    color: 'from-calm to-deep'
+  getting_started: {
+    icon: <Rocket className="w-6 h-6" />,
+    title: 'Getting Started',
+    description: 'New to CoveTalks? Start here with our beginner guides.',
+    color: 'from-blue-500 to-blue-600'
   },
-  organizations: {
-    icon: <Building className="w-6 h-6" />,
-    title: 'For Organizations',
-    description: 'Discover how to post opportunities, review applications, and find the perfect speakers.',
-    color: 'from-sand to-calm'
+  best_practices: {
+    icon: <TrendingUp className="w-6 h-6" />,
+    title: 'Best Practices',
+    description: 'Tips and strategies to maximize your success on CoveTalks.',
+    color: 'from-pink-500 to-pink-600'
   },
   billing: {
     icon: <CreditCard className="w-6 h-6" />,
@@ -55,25 +57,25 @@ const categoryData = {
     description: 'Troubleshoot issues, report bugs, and get technical assistance.',
     color: 'from-purple-500 to-purple-600'
   },
-  'getting-started': {
-    icon: <Rocket className="w-6 h-6" />,
-    title: 'Getting Started',
-    description: 'New to CoveTalks? Start here with our beginner guides.',
-    color: 'from-blue-500 to-blue-600'
+  speakers: {
+    icon: <Mic className="w-6 h-6" />,
+    title: 'For Speakers',
+    description: 'Learn how to create your profile, apply to opportunities, and grow your speaking career.',
+    color: 'from-calm to-deep'
   },
-  'best-practices': {
-    icon: <TrendingUp className="w-6 h-6" />,
-    title: 'Best Practices',
-    description: 'Tips and strategies to maximize your success on CoveTalks.',
-    color: 'from-pink-500 to-pink-600'
+  organizations: {
+    icon: <Building className="w-6 h-6" />,
+    title: 'For Organizations',
+    description: 'Discover how to post opportunities, review applications, and find the perfect speakers.',
+    color: 'from-sand to-calm'
   },
-  'account': {
+  account: {
     icon: <User className="w-6 h-6" />,
     title: 'Account Management',
     description: 'Manage your profile, settings, and account preferences.',
     color: 'from-indigo-500 to-indigo-600'
   },
-  'payments': {
+  payments: {
     icon: <CreditCard className="w-6 h-6" />,
     title: 'Payments & Billing',
     description: 'Handle invoices, refunds, and payment processing.',
@@ -174,11 +176,11 @@ export default function HelpClient({ initialArticles, popularArticles }: HelpCli
               if (!category) return null
               
               return (
-                <button
+                <Link
                   key={categoryKey}
-                  onClick={() => setSelectedCategory(selectedCategory === categoryKey ? null : categoryKey)}
+                  href={`/help/category/${categoryKey}`}
                   className={cn(
-                    "bg-white rounded-xl p-6 shadow-soft hover:shadow-medium transition-all duration-300 text-left border-2",
+                    "bg-white rounded-xl p-6 shadow-soft hover:shadow-medium transition-all duration-300 text-left border-2 block",
                     selectedCategory === categoryKey ? "border-calm" : "border-transparent"
                   )}
                 >
@@ -191,10 +193,10 @@ export default function HelpClient({ initialArticles, popularArticles }: HelpCli
                   <h3 className="font-bold text-lg text-deep mb-2">{category.title}</h3>
                   <p className="text-gray-600 text-sm">{category.description}</p>
                   <div className="mt-4 text-calm font-medium flex items-center">
-                    Explore {category.title.split(' ')[0]} Guides
+                    Browse {category.title} Articles
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </div>
-                </button>
+                </Link>
               )
             })}
           </div>
@@ -211,13 +213,23 @@ export default function HelpClient({ initialArticles, popularArticles }: HelpCli
             <div className="grid md:grid-cols-2 gap-8">
               {/* Getting Started */}
               <div className="bg-white rounded-xl p-6 shadow-soft">
-                <h3 className="font-bold text-xl text-deep mb-4 flex items-center gap-2">
-                  <Rocket className="w-5 h-5 text-calm" />
-                  Getting Started
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-xl text-deep flex items-center gap-2">
+                    <Rocket className="w-5 h-5 text-calm" />
+                    Getting Started
+                  </h3>
+                  {popularArticles.filter(a => a.category === 'getting_started').length > 0 && (
+                    <Link 
+                      href="/help/category/getting_started"
+                      className="text-sm text-calm hover:text-deep transition-colors"
+                    >
+                      View All →
+                    </Link>
+                  )}
+                </div>
                 <ul className="space-y-3">
                   {popularArticles
-                    .filter(a => a.category === 'getting-started')
+                    .filter(a => a.category === 'getting_started')
                     .slice(0, 5)
                     .map((article) => (
                       <li key={article.id}>
@@ -230,18 +242,31 @@ export default function HelpClient({ initialArticles, popularArticles }: HelpCli
                         </Link>
                       </li>
                     ))}
+                  {popularArticles.filter(a => a.category === 'getting_started').length === 0 && (
+                    <li className="text-gray-500 text-sm">No articles in this category yet</li>
+                  )}
                 </ul>
               </div>
 
               {/* Best Practices */}
               <div className="bg-white rounded-xl p-6 shadow-soft">
-                <h3 className="font-bold text-xl text-deep mb-4 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-calm" />
-                  Best Practices
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-xl text-deep flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-calm" />
+                    Best Practices
+                  </h3>
+                  {popularArticles.filter(a => a.category === 'best_practices').length > 0 && (
+                    <Link 
+                      href="/help/category/best_practices"
+                      className="text-sm text-calm hover:text-deep transition-colors"
+                    >
+                      View All →
+                    </Link>
+                  )}
+                </div>
                 <ul className="space-y-3">
                   {popularArticles
-                    .filter(a => a.category === 'best-practices')
+                    .filter(a => a.category === 'best_practices')
                     .slice(0, 5)
                     .map((article) => (
                       <li key={article.id}>
@@ -254,18 +279,31 @@ export default function HelpClient({ initialArticles, popularArticles }: HelpCli
                         </Link>
                       </li>
                     ))}
+                  {popularArticles.filter(a => a.category === 'best_practices').length === 0 && (
+                    <li className="text-gray-500 text-sm">No articles in this category yet</li>
+                  )}
                 </ul>
               </div>
 
-              {/* Account Management */}
+              {/* Billing */}
               <div className="bg-white rounded-xl p-6 shadow-soft">
-                <h3 className="font-bold text-xl text-deep mb-4 flex items-center gap-2">
-                  <Wrench className="w-5 h-5 text-calm" />
-                  Account Management
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-xl text-deep flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-calm" />
+                    Billing & Subscriptions
+                  </h3>
+                  {popularArticles.filter(a => a.category === 'billing').length > 0 && (
+                    <Link 
+                      href="/help/category/billing"
+                      className="text-sm text-calm hover:text-deep transition-colors"
+                    >
+                      View All →
+                    </Link>
+                  )}
+                </div>
                 <ul className="space-y-3">
                   {popularArticles
-                    .filter(a => a.category === 'account')
+                    .filter(a => a.category === 'billing')
                     .slice(0, 5)
                     .map((article) => (
                       <li key={article.id}>
@@ -278,18 +316,31 @@ export default function HelpClient({ initialArticles, popularArticles }: HelpCli
                         </Link>
                       </li>
                     ))}
+                  {popularArticles.filter(a => a.category === 'billing').length === 0 && (
+                    <li className="text-gray-500 text-sm">No articles in this category yet</li>
+                  )}
                 </ul>
               </div>
 
-              {/* Payments & Billing */}
+              {/* Technical Support */}
               <div className="bg-white rounded-xl p-6 shadow-soft">
-                <h3 className="font-bold text-xl text-deep mb-4 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-calm" />
-                  Payments & Billing
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-xl text-deep flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-calm" />
+                    Technical Support
+                  </h3>
+                  {popularArticles.filter(a => a.category === 'technical').length > 0 && (
+                    <Link 
+                      href="/help/category/technical"
+                      className="text-sm text-calm hover:text-deep transition-colors"
+                    >
+                      View All →
+                    </Link>
+                  )}
+                </div>
                 <ul className="space-y-3">
                   {popularArticles
-                    .filter(a => a.category === 'payments')
+                    .filter(a => a.category === 'technical')
                     .slice(0, 5)
                     .map((article) => (
                       <li key={article.id}>
@@ -302,6 +353,9 @@ export default function HelpClient({ initialArticles, popularArticles }: HelpCli
                         </Link>
                       </li>
                     ))}
+                  {popularArticles.filter(a => a.category === 'technical').length === 0 && (
+                    <li className="text-gray-500 text-sm">No articles in this category yet</li>
+                  )}
                 </ul>
               </div>
             </div>
@@ -350,10 +404,10 @@ export default function HelpClient({ initialArticles, popularArticles }: HelpCli
                         <span className="capitalize">{article.category}</span>
                         <span>•</span>
                         <span>{article.view_count} views</span>
-                        {article.is_featured && (
+                        {article.is_popular && (  // Changed to is_popular
                           <>
                             <span>•</span>
-                            <span className="text-sand font-medium">Featured</span>
+                            <span className="text-sand font-medium">Popular</span>
                           </>
                         )}
                       </div>

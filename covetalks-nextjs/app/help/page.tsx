@@ -15,10 +15,12 @@ interface HelpArticle {
   excerpt: string
   category: string
   author_id: string | null
-  is_featured: boolean  // This one stays as is_featured
-  published: boolean  // Changed from is_published
+  is_popular: boolean  // Changed from is_featured
+  is_new: boolean  // Added
+  published: boolean
   view_count: number
   helpful_count: number
+  not_helpful_count: number  // Added
   tags: string[] | null
   meta_description: string | null
   created_at: string
@@ -32,7 +34,6 @@ async function getHelpArticles() {
     .from('help_articles')
     .select('*')
     .eq('published', true)  // Changed from is_published
-    .order('is_featured', { ascending: false })
     .order('view_count', { ascending: false })
 
   if (error) {

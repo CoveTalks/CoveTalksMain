@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Clock, Eye, ThumbsUp, ThumbsDown, BookOpen, ChevronRight, Home, Copy, Check } from 'lucide-react'
+import { ChevronLeft, Clock, Eye, ThumbsUp, ThumbsDown, BookOpen, ChevronRight, Home, Copy, Check, MessageCircle, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { createClientSupabaseClient } from '@/lib/supabase/client'
@@ -39,10 +39,12 @@ export default function HelpArticleClient({ article, relatedArticles }: HelpArti
   const supabase = createClientSupabaseClient()
 
   // Extract sections from content for table of contents
-  const sections = article.content.match(/#{2,3}\s.+/g)?.map((heading) => {
+  const sections = article.content.match(/#{2,3}\s.+/g)?.map((heading, index) => {
     const level = heading.match(/^#{2,3}/)?.[0].length || 2
     const text = heading.replace(/^#{2,3}\s/, '')
-    const id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+    const baseId = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+    // Add index to ensure uniqueness
+    const id = `${baseId}-${index}`
     return { id, text, level }
   }) || []
 
@@ -127,16 +129,19 @@ export default function HelpArticleClient({ article, relatedArticles }: HelpArti
   // Render markdown-like content
   const renderContent = () => {
     let html = article.content
+    let headingIndex = 0
     
-    // Convert headers and add IDs
-    html = html.replace(/^### (.+)$/gm, (match, p1) => {
-      const id = p1.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
-      return `<h3 id="${id}" class="text-xl font-bold text-calm mt-6 mb-3">${p1}</h3>`
-    })
-    
-    html = html.replace(/^## (.+)$/gm, (match, p1) => {
-      const id = p1.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
-      return `<h2 id="${id}" class="text-2xl font-bold text-deep mt-8 mb-4 pt-4 border-t border-gray-200">${p1}</h2>`
+    // Process all headers in order they appear (both h2 and h3)
+    html = html.replace(/^(#{2,3})\s(.+)$/gm, (match, hashes, text) => {
+      const level = hashes.length
+      const baseId = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+      const id = `${baseId}-${headingIndex++}`
+      
+      if (level === 2) {
+        return `<h2 id="${id}" class="text-2xl font-bold text-deep mt-8 mb-4 pt-4 border-t border-gray-200">${text}</h2>`
+      } else {
+        return `<h3 id="${id}" class="text-xl font-bold text-calm mt-6 mb-3">${text}</h3>`
+      }
     })
     
     // Convert bold text
