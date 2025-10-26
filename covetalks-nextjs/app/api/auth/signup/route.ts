@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { SignJWT } from 'jose'
+import { nanoid } from 'nanoid'
 
 // Create Supabase admin client
 const supabaseAdmin = createClient(
@@ -13,14 +15,32 @@ const supabaseAdmin = createClient(
   }
 )
 
+// Generate a secure auto-login token
+async function generateAutoLoginToken(userId: string, email: string): Promise<string> {
+  const secret = new TextEncoder().encode(process.env.AUTH_SECRET || 'your-secret-key')
+  
+  const token = await new SignJWT({ 
+    userId,
+    email,
+    purpose: 'auto-login',
+    jti: nanoid(), // Unique token ID
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('5m') // Token expires in 5 minutes
+    .sign(secret)
+  
+  return token
+}
+
 export async function POST(request: NextRequest) {
-  console.log('📝 Signup request received')
+  console.log('🔐 Signup request received')
   
   try {
     const body = await request.json()
-    const { email, password, name, userType, planId } = body
+    const { email, password, name, userType, planId, priceId } = body
 
-    console.log('Request data:', { email, name, userType, planId })
+    console.log('Request data:', { email, name, userType, planId, priceId })
 
     // Validate required fields
     if (!email || !password || !name || !userType) {
@@ -30,11 +50,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // First check if email already exists in members table
+    // Validate password strength
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: 'Password must be at least 8 characters' },
+        { status: 400 }
+      )
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      )
+    }
+
+    // Check if email already exists
     const { data: existingMember } = await supabaseAdmin
       .from('members')
       .select('id, email')
-      .eq('email', email)
+      .eq('email', email.toLowerCase())
       .single()
 
     if (existingMember) {
@@ -48,9 +85,9 @@ export async function POST(request: NextRequest) {
     // Create user in Supabase Auth
     console.log('Creating user in Supabase Auth...')
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: email.toLowerCase(),
       password,
-      email_confirm: true,
+      email_confirm: true, // Auto-confirm for now, change for production
       user_metadata: {
         name,
         user_type: userType,
@@ -61,76 +98,73 @@ export async function POST(request: NextRequest) {
     if (authError) {
       console.error('Auth error:', authError)
       
+      // Handle duplicate user in auth
       if (authError.message?.includes('already registered')) {
+        // Clean up orphaned auth user
+        const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({
+          filter: `email.eq.${email}`,
+          page: 1,
+          perPage: 1
+        })
+        
+        if (users && users.length > 0 && !existingMember) {
+          await supabaseAdmin.auth.admin.deleteUser(users[0].id)
+          console.log('Cleaned up orphaned auth user')
+          
+          // Retry creation
+          const retryResult = await supabaseAdmin.auth.admin.createUser({
+            email: email.toLowerCase(),
+            password,
+            email_confirm: true,
+            user_metadata: { name, user_type: userType, plan_id: planId || 'free' }
+          })
+          
+          if (retryResult.error) {
+            return NextResponse.json(
+              { error: 'Failed to create account. Please try again.' },
+              { status: 400 }
+            )
+          }
+          
+          Object.assign(authData, retryResult.data)
+        } else {
+          return NextResponse.json(
+            { error: 'An account with this email already exists' },
+            { status: 400 }
+          )
+        }
+      } else {
         return NextResponse.json(
-          { error: 'An account with this email already exists' },
+          { error: authError.message },
           { status: 400 }
         )
       }
-      
+    }
+
+    if (!authData?.user) {
       return NextResponse.json(
-        { error: authError.message },
-        { status: 400 }
+        { error: 'Failed to create user account' },
+        { status: 500 }
       )
     }
 
     console.log('User created in Auth:', authData.user.id)
     
-    // Check if member with this ID already exists (from previous failed attempt)
-    const { data: existingMemberById } = await supabaseAdmin
-      .from('members')
-      .select('id')
-      .eq('id', authData.user.id)
-      .single()
-
-    if (existingMemberById) {
-      console.log('Member record already exists for this ID, updating instead...')
-      
-      // Update existing member record
-      const { data: updatedMember, error: updateError } = await supabaseAdmin
-        .from('members')
-        .update({
-          email,
-          name,
-          member_type: userType === 'speaker' ? 'Speaker' : 'Organization',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', authData.user.id)
-        .select()
-        .single()
-
-      if (updateError) {
-        console.error('Update error:', updateError)
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
-        return NextResponse.json(
-          { error: 'Failed to update user profile', details: updateError.message },
-          { status: 500 }
-        )
-      }
-
-      console.log('✅ Member profile updated successfully')
-      
-      return NextResponse.json({
-        user: {
-          id: authData.user.id,
-          email: authData.user.email,
-          name,
-          userType,
-          planId
-        },
-        message: 'Account created successfully'
-      })
-    }
-
-    // Create new member profile
-    console.log('Creating member profile...')
-    
+    // Create member profile with proper fields
     const memberType = userType === 'speaker' ? 'Speaker' : 'Organization'
     const memberInsert = {
       id: authData.user.id,
-      email,
+      email: email.toLowerCase(),
       name,
-      member_type: memberType
+      member_type: memberType,
+      status: 'Active',
+      created_at: new Date().toISOString(),
+      onboarding_completed: false,
+      // Set initial fields based on user type
+      ...(userType === 'speaker' ? {
+        stripe_price_id: priceId || null,
+        subscription_plan: planId || 'free'
+      } : {})
     }
 
     console.log('Inserting member with data:', memberInsert)
@@ -143,78 +177,120 @@ export async function POST(request: NextRequest) {
 
     if (memberError) {
       console.error('Member creation error:', memberError)
-      console.error('Error details:', {
-        code: memberError.code,
-        message: memberError.message,
-        details: memberError.details,
-        hint: memberError.hint
-      })
       
       // Clean up auth user if member creation fails
-      console.log('Cleaning up auth user...')
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
       
       return NextResponse.json(
         { 
           error: 'Failed to create user profile',
-          details: memberError.message,
-          hint: memberError.hint
+          details: memberError.message
         },
         { status: 500 }
       )
     }
 
-    console.log('✅ Member profile created successfully:', insertedMember)
+    console.log('✅ Member profile created successfully')
 
-    // If organization type, try to create organization record
+    // Handle organization setup
     if (userType === 'organization') {
-      console.log('Creating organization record...')
+      console.log('Setting up organization...')
       
-      const { data: orgData, error: orgError } = await supabaseAdmin
+      // Create organization record
+      const { error: orgError } = await supabaseAdmin
         .from('organizations')
         .insert({
           id: authData.user.id,
-          name: name
+          name: name,
+          type: 'Pending', // Will be set during onboarding
+          created_at: new Date().toISOString()
         })
-        .select()
 
-      if (orgError) {
-        console.error('Organization creation error (non-fatal):', orgError)
-      } else {
-        console.log('Organization created:', orgData)
+      if (orgError && orgError.code !== '23505') { // Ignore duplicate key error
+        console.error('Organization creation warning:', orgError)
       }
 
-      // Try to create organization_member link
+      // Create organization_member link
       const { error: linkError } = await supabaseAdmin
         .from('organization_members')
         .insert({
           organization_id: authData.user.id,
           member_id: authData.user.id,
-          role: 'Owner'
+          role: 'Admin',
+          is_primary: true,
+          created_at: new Date().toISOString()
         })
 
-      if (linkError) {
-        console.error('Organization link error (non-fatal):', linkError)
+      if (linkError && linkError.code !== '23505') {
+        console.error('Organization member link warning:', linkError)
       }
     }
 
-    console.log('✅ Signup successful!')
+    // Create initial subscription record (Free plan)
+    if (userType === 'speaker' && !priceId) {
+      const { error: subError } = await supabaseAdmin
+        .from('subscriptions')
+        .insert({
+          member_id: authData.user.id,
+          plan_type: 'Free',
+          status: 'Active',
+          billing_period: 'Monthly',
+          amount: 0,
+          start_date: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        })
 
-    // Return success with user data
+      if (subError && subError.code !== '23505') {
+        console.error('Free subscription creation warning:', subError)
+      }
+    }
+
+    // Generate auto-login token
+    const autoLoginToken = await generateAutoLoginToken(authData.user.id, authData.user.email!)
+    
+    console.log('✅ Signup successful! Generated auto-login token')
+
+    // Determine redirect URL based on plan type
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    
+    let redirectUrl: string
+    
+    if (priceId && userType === 'speaker') {
+      // Paid plan: Store token and redirect to Stripe checkout
+      // Token will be used after Stripe success callback
+      await supabaseAdmin
+        .from('pending_auth_tokens')
+        .insert({
+          token: autoLoginToken,
+          user_id: authData.user.id,
+          email: authData.user.email,
+          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes for Stripe flow
+        })
+      
+      // Return Stripe checkout URL
+      redirectUrl = `/api/checkout?priceId=${priceId}&userId=${authData.user.id}&token=${autoLoginToken}`
+    } else {
+      // Free plan or organization: Direct to app with auto-login
+      redirectUrl = `${appUrl}/auth/auto-login?token=${autoLoginToken}&newUser=true`
+    }
+
     return NextResponse.json({
+      success: true,
+      redirectUrl,
+      requiresCheckout: !!priceId,
       user: {
         id: authData.user.id,
         email: authData.user.email,
         name,
         userType,
-        planId
+        planId: planId || 'free'
       },
       message: 'Account created successfully'
     })
 
   } catch (error: any) {
     console.error('Unexpected signup error:', error)
-    console.error('Error stack:', error.stack)
     
     return NextResponse.json(
       { 
@@ -226,22 +302,31 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Test endpoint
+// Test/health check endpoint
 export async function GET() {
-  const { count, error } = await supabaseAdmin
+  const { count: memberCount, error: memberError } = await supabaseAdmin
     .from('members')
+    .select('*', { count: 'exact', head: true })
+
+  const { count: orgCount, error: orgError } = await supabaseAdmin
+    .from('organizations')
     .select('*', { count: 'exact', head: true })
 
   return NextResponse.json({
     status: 'Signup API is running',
+    timestamp: new Date().toISOString(),
     configured: {
       supabase_url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       service_role_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      database_connected: !error
+      auth_secret: !!process.env.AUTH_SECRET,
+      app_url: process.env.NEXT_PUBLIC_APP_URL || 'not set',
+      database_connected: !memberError
     },
     database: {
-      members_count: count || 0,
-      connection_error: error?.message || null
+      members_count: memberCount || 0,
+      organizations_count: orgCount || 0,
+      member_error: memberError?.message || null,
+      org_error: orgError?.message || null
     }
   })
 }
