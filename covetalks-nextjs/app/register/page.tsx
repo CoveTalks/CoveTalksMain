@@ -39,6 +39,8 @@ export default function RegisterPage() {
     }
   }, [formData.userType])
 
+
+
   const fetchPricing = async () => {
     try {
       const response = await fetch('/api/stripe/prices')
@@ -184,11 +186,16 @@ export default function RegisterPage() {
         throw new Error(error.error || 'Failed to create account')
       }
 
-      const { user } = await signupRes.json()
+      const data = await signupRes.json()
       
-      // Redirect to app for onboarding
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
-      window.location.href = `${appUrl}/onboarding?welcome=true&type=organization`
+      // NEW: Use redirect URL if provided
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl
+      } else {
+        // FALLBACK: Keep existing flow
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+        window.location.href = `${appUrl}/onboarding?welcome=true&type=organization`
+      }
 
     } catch (err: any) {
       setError(err.message)
@@ -201,17 +208,36 @@ export default function RegisterPage() {
     setError(null)
 
     try {
+      // Build signup data
+      const signupData: any = {
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        userType: 'speaker',
+        planId: formData.planId
+      }
+
+      // NEW: Add priceId for paid plans
+      if (formData.userType === 'speaker' && formData.planId && formData.planId !== 'free') {
+        const selectedPlanData = pricingData?.speaker?.find((p: any) => {
+          const planId = p.id.toLowerCase().replace('covetalks ', '').replace(' ', '_')
+          return planId === formData.planId
+        })
+        
+        const priceId = formData.billingPeriod === 'monthly' 
+          ? selectedPlanData?.prices.monthly?.id 
+          : selectedPlanData?.prices.yearly?.id
+        
+        if (priceId) {
+          signupData.priceId = priceId
+        }
+      }
+
       // 1. Create user account first
       const signupRes = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          name: formData.name,
-          userType: 'speaker',
-          planId: formData.planId
-        })
+        body: JSON.stringify(signupData)
       })
 
       if (!signupRes.ok) {
@@ -219,35 +245,43 @@ export default function RegisterPage() {
         throw new Error(error.error || 'Failed to create account')
       }
 
-      const { user } = await signupRes.json()
+      const data = await signupRes.json()
 
-      // 2. Create Stripe checkout session for speakers
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
-      
-      const checkoutRes = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          priceId: formData.priceId,
-          customerEmail: formData.email,
-          successUrl: `${appUrl}/onboarding?welcome=true&session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${window.location.origin}/register`,
-          metadata: {
-            userId: user.id,
-            userType: 'speaker',
-            planId: formData.planId
-          }
+      // NEW: Use redirect URL if provided
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl
+      } else {
+        // FALLBACK: Keep existing Stripe checkout flow
+        const { user } = data
+
+        // 2. Create Stripe checkout session for speakers
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+        
+        const checkoutRes = await fetch('/api/stripe/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            priceId: formData.priceId,
+            customerEmail: formData.email,
+            successUrl: `${appUrl}/onboarding?welcome=true&session_id={CHECKOUT_SESSION_ID}`,
+            cancelUrl: `${window.location.origin}/register`,
+            metadata: {
+              userId: user.id,
+              userType: 'speaker',
+              planId: formData.planId
+            }
+          })
         })
-      })
 
-      if (!checkoutRes.ok) {
-        throw new Error('Failed to create checkout session')
+        if (!checkoutRes.ok) {
+          throw new Error('Failed to create checkout session')
+        }
+
+        const { url } = await checkoutRes.json()
+
+        // 3. Redirect to Stripe Checkout
+        window.location.href = url
       }
-
-      const { url } = await checkoutRes.json()
-
-      // 3. Redirect to Stripe Checkout
-      window.location.href = url
 
     } catch (err: any) {
       setError(err.message)
@@ -260,7 +294,7 @@ export default function RegisterPage() {
       <div className="max-w-4xl mx-auto px-4">
         {/* Progress Steps */}
         <div className="flex items-center justify-center mb-12">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             <div className={`flex items-center ${step >= 1 ? 'text-deep' : 'text-gray-400'}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
                 step >= 1 ? 'border-deep bg-deep text-white' : 'border-gray-300'
@@ -270,7 +304,7 @@ export default function RegisterPage() {
               <span className="ml-2 font-medium">Account</span>
             </div>
 
-            <div className={`w-20 h-0.5 ${step > 1 ? 'bg-deep' : 'bg-gray-300'}`} />
+            <div className={`w-12 md:w-20 h-0.5 ${step > 1 ? 'bg-deep' : 'bg-gray-300'}`} />
 
             <div className={`flex items-center ${step >= 2 ? 'text-deep' : 'text-gray-400'}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
@@ -284,7 +318,7 @@ export default function RegisterPage() {
             {/* Only show payment step for speakers */}
             {formData.userType === 'speaker' && (
               <>
-                <div className={`w-20 h-0.5 ${step > 2 ? 'bg-deep' : 'bg-gray-300'}`} />
+                <div className={`w-12 md:w-20 h-0.5 ${step > 2 ? 'bg-deep' : 'bg-gray-300'}`} />
                 <div className={`flex items-center ${step >= 3 ? 'text-deep' : 'text-gray-400'}`}>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
                     step >= 3 ? 'border-deep bg-deep text-white' : 'border-gray-300'

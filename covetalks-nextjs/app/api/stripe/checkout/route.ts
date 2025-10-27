@@ -92,6 +92,8 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const priceId = searchParams.get('priceId')
+    const userId = searchParams.get('userId')
+    const token = searchParams.get('token') // ADD THIS
     
     if (!priceId) {
       return NextResponse.json(
@@ -100,9 +102,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Build URLs with proper scheme
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+
+    // Include token in success URL
+    const successUrl = token 
+      ? `${appUrl}/auth/auto-login?token=${token}&fromStripe=true&session_id={CHECKOUT_SESSION_ID}`
+      : `${appUrl}/onboarding?success=true&session_id={CHECKOUT_SESSION_ID}`
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -113,17 +119,17 @@ export async function GET(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      success_url: `${appUrl}/onboarding?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: successUrl, // Uses URL with token
       cancel_url: `${baseUrl}/register`,
       allow_promotion_codes: true,
-      // No trial period - immediate payment
+      metadata: {
+        userId: userId || '',
+      }
     })
 
-    // Redirect to Stripe Checkout
     return NextResponse.redirect(session.url!)
   } catch (error: any) {
     console.error('Stripe checkout error:', error)
-    // Redirect back to pricing with error
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
     return NextResponse.redirect(`${baseUrl}/register?error=checkout_failed`)
   }

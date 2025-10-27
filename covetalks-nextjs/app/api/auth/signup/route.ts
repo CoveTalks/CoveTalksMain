@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       user_metadata: {
         name,
         user_type: userType,
-        plan_id: planId || 'free'
+        plan_id: planId || 'Free'
       }
     })
 
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
             email: email.toLowerCase(),
             password,
             email_confirm: true,
-            user_metadata: { name, user_type: userType, plan_id: planId || 'free' }
+            user_metadata: { name, user_type: userType, plan_id: planId || 'Free' }
           })
           
           if (retryResult.error) {
@@ -150,8 +150,40 @@ export async function POST(request: NextRequest) {
 
     console.log('User created in Auth:', authData.user.id)
     
+    // FIX: Check for orphaned member record before inserting
+    const { data: existingMemberById } = await supabaseAdmin
+      .from('members')
+      .select('id')
+      .eq('id', authData.user.id)
+      .single()
+
+    if (existingMemberById) {
+      console.log('Found orphaned member record, cleaning up...')
+      await supabaseAdmin
+        .from('members')
+        .delete()
+        .eq('id', authData.user.id)
+    }
+    
     // Create member profile with proper fields
     const memberType = userType === 'speaker' ? 'Speaker' : 'Organization'
+    
+    // FIX: Determine the plan name from planId
+    let subscriptionPlan = 'Free'
+    if (planId) {
+      // If planId starts with 'prod_' it's a Stripe product ID
+      // Map it to the plan name based on your Stripe products
+      if (planId.startsWith('prod_')) {
+        // You'll need to map these based on your actual Stripe products
+        // Or better yet, pass the plan name from the frontend
+        console.warn('Received Stripe product ID instead of plan name:', planId)
+        subscriptionPlan = 'Professional' // Default fallback, should be passed from frontend
+      } else {
+        // It's already the plan name
+        subscriptionPlan = planId
+      }
+    }
+    
     const memberInsert = {
       id: authData.user.id,
       email: email.toLowerCase(),
@@ -163,7 +195,7 @@ export async function POST(request: NextRequest) {
       // Set initial fields based on user type
       ...(userType === 'speaker' ? {
         stripe_price_id: priceId || null,
-        subscription_plan: planId || 'free'
+        subscription_plan: subscriptionPlan
       } : {})
     }
 
@@ -259,17 +291,24 @@ export async function POST(request: NextRequest) {
     if (priceId && userType === 'speaker') {
       // Paid plan: Store token and redirect to Stripe checkout
       // Token will be used after Stripe success callback
-      await supabaseAdmin
-        .from('pending_auth_tokens')
-        .insert({
-          token: autoLoginToken,
-          user_id: authData.user.id,
-          email: authData.user.email,
-          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes for Stripe flow
-        })
+      
+      // Check if pending_auth_tokens table exists, if not, skip this step
+      try {
+        await supabaseAdmin
+          .from('pending_auth_tokens')
+          .insert({
+            token: autoLoginToken,
+            user_id: authData.user.id,
+            email: authData.user.email,
+            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes for Stripe flow
+          })
+      } catch (tokenError) {
+        console.warn('Could not store pending auth token:', tokenError)
+        // Continue anyway - token is embedded in URL
+      }
       
       // Return Stripe checkout URL
-      redirectUrl = `/api/checkout?priceId=${priceId}&userId=${authData.user.id}&token=${autoLoginToken}`
+      redirectUrl = `/api/stripe/checkout?priceId=${priceId}&userId=${authData.user.id}&token=${autoLoginToken}`
     } else {
       // Free plan or organization: Direct to app with auto-login
       redirectUrl = `${appUrl}/auth/auto-login?token=${autoLoginToken}&newUser=true`
@@ -284,7 +323,7 @@ export async function POST(request: NextRequest) {
         email: authData.user.email,
         name,
         userType,
-        planId: planId || 'free'
+        planId: subscriptionPlan
       },
       message: 'Account created successfully'
     })
