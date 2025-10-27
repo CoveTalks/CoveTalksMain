@@ -39,8 +39,6 @@ export default function RegisterPage() {
     }
   }, [formData.userType])
 
-
-
   const fetchPricing = async () => {
     try {
       const response = await fetch('/api/stripe/prices')
