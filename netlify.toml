@@ -1,8 +1,5 @@
-# Minimal Netlify Configuration for CoveTalks
-# Place this file in the root of your repository
-
 [build]
-  base = "COVETALKSMAIN/covetalks-nextjs"
+  base = "covetalks-nextjs"
   command = "npm run build"
   publish = ".next"
 
