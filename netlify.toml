@@ -1,124 +1,13 @@
-# Netlify Configuration for CoveTalks Marketing Site
-# This file should be placed in the root of your repository
+# Minimal Netlify Configuration for CoveTalks
+# Place this file in the root of your repository
 
 [build]
-  # Base directory for the build (where package.json is located)
   base = "COVETALKSMAIN/covetalks-nextjs"
-  
-  # Build command for Next.js
   command = "npm run build"
-  
-  # Directory to deploy (Next.js output directory)
   publish = ".next"
-  
-  # Node version for builds (adjust if needed)
-  environment = { NODE_VERSION = "18.17.0" }
 
 [build.environment]
-  # Next.js telemetry opt-out
-  NEXT_TELEMETRY_DISABLED = "1"
-  
-  # Add your environment variables here
-  # These will be overridden by Netlify UI environment variables
-  # NEXT_PUBLIC_SUPABASE_URL = "your-supabase-url"
-  # NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-supabase-anon-key"
-  # NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "your-stripe-key"
-  # NEXT_PUBLIC_RECAPTCHA_SITE_KEY = "your-recaptcha-key"
+  NODE_VERSION = "18.17.0"
 
-# Essential plugin for Next.js on Netlify
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-# Headers for security and performance
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
-
-[[headers]]
-  for = "/_next/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/_next/image/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Redirects (add any specific redirects you need)
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-  force = true
-  conditions = {Role = ["admin", "user"]}
-  # Remove conditions if not using Netlify Identity
-
-# Handle Next.js ISR (Incremental Static Regeneration)
-[[redirects]]
-  from = "/_next/data/*"
-  to = "/.netlify/builders/___netlify-odb-handler"
-  status = 200
-  force = true
-
-# SPA fallback for client-side routing
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = {Language = ["en"], Country = ["US"]}
-  # Adjust or remove conditions as needed
-
-# Functions configuration (if using Netlify Functions)
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  
-  # External node modules that shouldn't be bundled
-  external_node_modules = ["@supabase/supabase-js", "stripe"]
-  
-  # Include files in all functions
-  included_files = ["data/**"]
-
-# Development settings
-[dev]
-  command = "npm run dev"
-  port = 3000
-  targetPort = 3000
-  framework = "#custom"
-  autoLaunch = false
-
-# Context-specific settings for different branches
-[context.production]
-  environment = { NEXT_PUBLIC_ENV = "production" }
-
-[context.staging]
-  environment = { NEXT_PUBLIC_ENV = "staging" }
-  
-[context.branch-deploy]
-  environment = { NEXT_PUBLIC_ENV = "development" }
-
-[context.deploy-preview]
-  environment = { NEXT_PUBLIC_ENV = "preview" }
-
-# Monorepo settings (important for your subdirectory structure)
-[build.processing]
-  skip = false
-  
-[build.processing.css]
-  bundle = true
-  minify = true
-  
-[build.processing.js]
-  bundle = true
-  minify = true
-  
-[build.processing.html]
-  pretty_urls = true
-  
-[build.processing.images]
-  compress = true
