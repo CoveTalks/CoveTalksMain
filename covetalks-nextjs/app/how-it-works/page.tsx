@@ -166,22 +166,6 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* Toggle Section */}
-      <section className="py-12 bg-white border-b sticky top-16 z-40">
-        <div className="container">
-          <div className="flex justify-center">
-            <div className="inline-flex rounded-lg border p-1 bg-gray-100">
-              <button className="px-6 py-2 rounded-md bg-white shadow-sm font-semibold text-primary">
-                For Speakers
-              </button>
-              <button className="px-6 py-2 rounded-md hover:bg-white/50 font-medium transition-colors">
-                For Organizations
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* For Speakers Section */}
       <section className="py-20 bg-foam">
         <div className="container">

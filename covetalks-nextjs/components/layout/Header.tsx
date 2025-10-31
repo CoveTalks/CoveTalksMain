@@ -15,6 +15,8 @@ const navigation = [
   { name: 'Contact', href: '/contact' },
 ]
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.covetalks.com'
+
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -97,7 +99,7 @@ export default function Header() {
               </div>
             ) : (
               <>
-                <Link href="/login">
+                <Link href={`${appUrl}/auth/login}`}>
                   <Button variant="ghost">Login</Button>
                 </Link>
                 <Link href="/register">
