@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     // Create user in Supabase Auth
     console.log('Creating user in Supabase Auth...')
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    let { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email.toLowerCase(),
       password,
       email_confirm: true, // Auto-confirm for now, change for production
@@ -165,8 +165,9 @@ export async function POST(request: NextRequest) {
                 )
               }
               
-              // Use the retry result data
-              authData.user = retryResult.data.user
+              // Replace authData with successful retry result
+              authData = retryResult.data
+              authError = null
               cleanupSuccessful = true
               console.log('✅ Successfully recreated user after cleanup')
               
