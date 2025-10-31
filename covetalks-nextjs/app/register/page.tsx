@@ -14,9 +14,7 @@ interface RegistrationForm {
   billingPeriod: 'monthly' | 'yearly'
 }
 
-export const dynamic = 'force-dynamic'
-
-export default function RegisterPage() {
+function RegisterPage() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -661,5 +659,13 @@ export default function RegisterPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RegisterContent />
+    </Suspense>
   )
 }
