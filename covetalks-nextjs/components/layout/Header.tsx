@@ -99,7 +99,7 @@ export default function Header() {
               </div>
             ) : (
               <>
-                <Link href={`${appUrl}/auth/login}`}>
+                <Link href={`${appUrl}/auth/login`}>
                   <Button variant="ghost">Login</Button>
                 </Link>
                 <Link href="/register">
