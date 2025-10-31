@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 import { SignJWT } from 'jose'
 import { nanoid } from 'nanoid'
 
+// Force Node.js runtime (required for Supabase admin operations)
+export const runtime = 'nodejs'
+
 // Create Supabase admin client
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -98,54 +101,101 @@ export async function POST(request: NextRequest) {
     if (authError) {
       console.error('Auth error:', authError)
       
-      // Handle duplicate user in auth
-      if (authError.message?.includes('already registered')) {
-        // User exists in auth but not in members table - this is an orphaned record
-        // Use getUserByEmail to properly fetch the existing auth user
-        console.log('Detected potential orphaned auth user - attempting cleanup')
-        
-        try {
-          const { data: authUserData } = await supabaseAdmin.auth.admin.getUserByEmail(email.toLowerCase())
+      // Handle duplicate user in auth - attempt cleanup of orphaned records
+      if (authError.message?.includes('already registered') || authError.message?.includes('already been registered')) {
+        // If no member exists, this is likely an orphaned auth record
+        if (!existingMember) {
+          console.log('Detected orphaned auth user - attempting cleanup')
           
-          if (authUserData?.user && !existingMember) {
-            // Orphaned auth user found - clean it up
-            console.log('Cleaning up orphaned auth user:', authUserData.user.id)
-            await supabaseAdmin.auth.admin.deleteUser(authUserData.user.id)
-            
-            // Retry user creation
-            const retryResult = await supabaseAdmin.auth.admin.createUser({
-              email: email.toLowerCase(),
-              password,
-              email_confirm: true,
-              user_metadata: { name, user_type: userType, plan_id: planId || 'Free' }
-            })
-            
-            if (retryResult.error) {
-              console.error('Retry creation failed:', retryResult.error)
-              return NextResponse.json(
-                { error: 'Failed to create account. Please try again.' },
-                { status: 400 }
-              )
+          // Try multiple approaches to find and clean up the orphaned user
+          let cleanupSuccessful = false
+          let orphanedUserId: string | null = null
+          
+          // Approach 1: Try getUserByEmail if available (newer Supabase versions)
+          try {
+            // @ts-ignore - Method may not exist in all versions
+            const getUserByEmailResult = await supabaseAdmin.auth.admin.getUserByEmail?.(email.toLowerCase())
+            if (getUserByEmailResult?.data?.user) {
+              orphanedUserId = getUserByEmailResult.data.user.id
+              console.log('Found orphaned user via getUserByEmail:', orphanedUserId)
             }
-            
-            // Use the retry result data
-            authData.user = retryResult.data.user
-          } else {
+          } catch (e) {
+            console.log('getUserByEmail not available or failed, trying alternative approach')
+          }
+          
+          // Approach 2: Try listUsers and search (if approach 1 failed)
+          if (!orphanedUserId) {
+            try {
+              const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({
+                page: 1,
+                perPage: 1000 // Get a large batch to search through
+              })
+              
+              if (users && users.length > 0) {
+                const orphanedUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+                if (orphanedUser) {
+                  orphanedUserId = orphanedUser.id
+                  console.log('Found orphaned user via listUsers:', orphanedUserId)
+                }
+              }
+            } catch (e) {
+              console.error('listUsers approach failed:', e)
+            }
+          }
+          
+          // If we found the orphaned user, clean it up
+          if (orphanedUserId) {
+            try {
+              await supabaseAdmin.auth.admin.deleteUser(orphanedUserId)
+              console.log('✅ Cleaned up orphaned auth user:', orphanedUserId)
+              
+              // Retry user creation
+              const retryResult = await supabaseAdmin.auth.admin.createUser({
+                email: email.toLowerCase(),
+                password,
+                email_confirm: true,
+                user_metadata: { name, user_type: userType, plan_id: planId || 'Free' }
+              })
+              
+              if (retryResult.error) {
+                console.error('Retry creation failed:', retryResult.error)
+                return NextResponse.json(
+                  { error: 'Failed to create account after cleanup. Please try again or contact support.' },
+                  { status: 400 }
+                )
+              }
+              
+              // Use the retry result data
+              authData.user = retryResult.data.user
+              cleanupSuccessful = true
+              console.log('✅ Successfully recreated user after cleanup')
+              
+            } catch (cleanupError) {
+              console.error('Failed to cleanup orphaned user:', cleanupError)
+            }
+          }
+          
+          // If cleanup wasn't successful, return helpful error
+          if (!cleanupSuccessful) {
             return NextResponse.json(
-              { error: 'An account with this email already exists' },
+              { 
+                error: 'An account with this email exists but is incomplete. Please contact support or try password recovery.',
+                errorCode: 'ORPHANED_ACCOUNT'
+              },
               { status: 400 }
             )
           }
-        } catch (getUserError) {
-          console.error('Error getting user by email:', getUserError)
+        } else {
+          // Member exists, normal duplicate
           return NextResponse.json(
-            { error: 'An account with this email already exists' },
+            { error: 'An account with this email already exists. Please sign in or use password recovery.' },
             { status: 400 }
           )
         }
       } else {
+        // Handle any other auth errors
         return NextResponse.json(
-          { error: authError.message },
+          { error: authError.message || 'Failed to create account' },
           { status: 400 }
         )
       }
