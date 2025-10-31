@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if email already exists
+    // Check if email already exists in members table
     const { data: existingMember } = await supabaseAdmin
       .from('members')
       .select('id, email')
@@ -100,34 +100,44 @@ export async function POST(request: NextRequest) {
       
       // Handle duplicate user in auth
       if (authError.message?.includes('already registered')) {
-        // Clean up orphaned auth user
-        const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({
-          filter: `email.eq.${email}`,
-          page: 1,
-          perPage: 1
-        })
+        // User exists in auth but not in members table - this is an orphaned record
+        // Use getUserByEmail to properly fetch the existing auth user
+        console.log('Detected potential orphaned auth user - attempting cleanup')
         
-        if (users && users.length > 0 && !existingMember) {
-          await supabaseAdmin.auth.admin.deleteUser(users[0].id)
-          console.log('Cleaned up orphaned auth user')
+        try {
+          const { data: authUserData } = await supabaseAdmin.auth.admin.getUserByEmail(email.toLowerCase())
           
-          // Retry creation
-          const retryResult = await supabaseAdmin.auth.admin.createUser({
-            email: email.toLowerCase(),
-            password,
-            email_confirm: true,
-            user_metadata: { name, user_type: userType, plan_id: planId || 'Free' }
-          })
-          
-          if (retryResult.error) {
+          if (authUserData?.user && !existingMember) {
+            // Orphaned auth user found - clean it up
+            console.log('Cleaning up orphaned auth user:', authUserData.user.id)
+            await supabaseAdmin.auth.admin.deleteUser(authUserData.user.id)
+            
+            // Retry user creation
+            const retryResult = await supabaseAdmin.auth.admin.createUser({
+              email: email.toLowerCase(),
+              password,
+              email_confirm: true,
+              user_metadata: { name, user_type: userType, plan_id: planId || 'Free' }
+            })
+            
+            if (retryResult.error) {
+              console.error('Retry creation failed:', retryResult.error)
+              return NextResponse.json(
+                { error: 'Failed to create account. Please try again.' },
+                { status: 400 }
+              )
+            }
+            
+            // Use the retry result data
+            authData.user = retryResult.data.user
+          } else {
             return NextResponse.json(
-              { error: 'Failed to create account. Please try again.' },
+              { error: 'An account with this email already exists' },
               { status: 400 }
             )
           }
-          
-          Object.assign(authData, retryResult.data)
-        } else {
+        } catch (getUserError) {
+          console.error('Error getting user by email:', getUserError)
           return NextResponse.json(
             { error: 'An account with this email already exists' },
             { status: 400 }
@@ -150,7 +160,7 @@ export async function POST(request: NextRequest) {
 
     console.log('User created in Auth:', authData.user.id)
     
-    // FIX: Check for orphaned member record before inserting
+    // Check for orphaned member record before inserting
     const { data: existingMemberById } = await supabaseAdmin
       .from('members')
       .select('id')
@@ -168,14 +178,12 @@ export async function POST(request: NextRequest) {
     // Create member profile with proper fields
     const memberType = userType === 'speaker' ? 'Speaker' : 'Organization'
     
-    // FIX: Determine the plan name from planId
+    // Determine the plan name from planId
     let subscriptionPlan = 'Free'
     if (planId) {
       // If planId starts with 'prod_' it's a Stripe product ID
       // Map it to the plan name based on your Stripe products
       if (planId.startsWith('prod_')) {
-        // You'll need to map these based on your actual Stripe products
-        // Or better yet, pass the plan name from the frontend
         console.warn('Received Stripe product ID instead of plan name:', planId)
         subscriptionPlan = 'Professional' // Default fallback, should be passed from frontend
       } else {
