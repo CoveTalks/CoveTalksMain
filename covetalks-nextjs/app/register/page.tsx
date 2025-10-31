@@ -14,7 +14,7 @@ interface RegistrationForm {
   billingPeriod: 'monthly' | 'yearly'
 }
 
-function RegisterPage() {
+function RegisterContent() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
