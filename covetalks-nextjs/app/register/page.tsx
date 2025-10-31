@@ -14,6 +14,8 @@ interface RegistrationForm {
   billingPeriod: 'monthly' | 'yearly'
 }
 
+export const dynamic = 'force-dynamic'
+
 export default function RegisterPage() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
