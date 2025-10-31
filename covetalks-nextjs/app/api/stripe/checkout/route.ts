@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
+// Use API version compatible with stripe@14.14.0
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2023-10-16',  // ✅ Stripe 14.14.0 only supports this version
 })
 
 export async function POST(request: NextRequest) {
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const priceId = searchParams.get('priceId')
     const userId = searchParams.get('userId')
-    const token = searchParams.get('token') // ADD THIS
+    const token = searchParams.get('token')
     
     if (!priceId) {
       return NextResponse.json(
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      success_url: successUrl, // Uses URL with token
+      success_url: successUrl,
       cancel_url: `${baseUrl}/register`,
       allow_promotion_codes: true,
       metadata: {

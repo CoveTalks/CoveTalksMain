@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
+// Use API version compatible with stripe@14.14.0
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2023-10-16',  // ✅ Stripe 14.14.0 only supports this version
 })
 
 export async function GET() {

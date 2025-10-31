@@ -128,12 +128,20 @@ export {
   ToastAction,
 }
 
+// ✅ FIXED: Proper type for toast with title and description
+type ToasterToast = ToastProps & {
+  id: string
+  title?: React.ReactNode
+  description?: React.ReactNode
+  action?: ToastActionElement
+}
+
 // Hook for using toast
 export function useToast() {
-  const [toasts, setToasts] = React.useState<ToastProps[]>([])
+  const [toasts, setToasts] = React.useState<ToasterToast[]>([])
 
   const toast = React.useCallback(
-    ({ ...props }: ToastProps) => {
+    ({ ...props }: Omit<ToasterToast, 'id'>) => {
       const id = Math.random().toString(36).substr(2, 9)
       setToasts((prev) => [...prev, { ...props, id, open: true }])
       
@@ -150,7 +158,7 @@ export function useToast() {
   }
 }
 
-// Toaster component
+// ✅ FIXED: Toaster component with properly typed toasts
 export function Toaster() {
   const { toasts } = useToast()
 
@@ -164,6 +172,7 @@ export function Toaster() {
               <ToastDescription>{toast.description}</ToastDescription>
             )}
           </div>
+          {toast.action}
           <ToastClose />
         </Toast>
       ))}

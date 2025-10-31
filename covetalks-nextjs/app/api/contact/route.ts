@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Force Node.js runtime (required for Supabase admin operations)
+export const runtime = 'nodejs'
+
 // Create Supabase client with service role for server operations
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -93,8 +96,9 @@ export async function POST(request: NextRequest) {
 
     console.log('Saving contact message to database...')
 
-    // Insert into Supabase - using contact_submissions table
+    // FIX: Insert into Supabase - MUST include .from('contact_submissions')
     const { data, error } = await supabaseAdmin
+      .from('contact_submissions')  // ✅ THIS WAS MISSING!
       .insert({
         name,
         email,
