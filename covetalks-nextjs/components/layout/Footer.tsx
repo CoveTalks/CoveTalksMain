@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Facebook, Twitter, Linkedin, Instagram, Mail, Phone, MapPin } from 'lucide-react'
+import { Linkedin, Mail, Phone, MapPin } from 'lucide-react'
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.covetalks.com'
+href={`${appUrl}/auth/login`}
 const footerNavigation = {
   quickLinks: [
     { name: 'Home', href: '/' },
@@ -13,7 +15,7 @@ const footerNavigation = {
   ],
   forOrganizations: [
     { name: 'Register Your Organization', href: '/register?type=organization' },
-    { name: 'Post Speaking Opportunity', href: '/post-opportunity' },
+    { name: 'Post Speaking Opportunity', href={`${appUrl}/opportunities/create`},
     { name: 'Browse Speakers', href: '/speakers' },
     { name: 'Organization Plans', href: '/pricing#organizations' },
     { name: 'Organization Guide', href: '/resources/organization-guide' },
@@ -36,10 +38,7 @@ const footerNavigation = {
 }
 
 const socialLinks = [
-  { name: 'LinkedIn', href: 'https://www.linkedin.com/company/108118017', icon: Linkedin },
-  { name: 'Facebook', href: '#', icon: Facebook },
-  { name: 'Twitter', href: '#', icon: Twitter },
-  { name: 'Instagram', href: '#', icon: Instagram },
+  { name: 'LinkedIn', href: 'https://www.linkedin.com/company/108118017', icon: Linkedin }
 ]
 
 export default function Footer() {
