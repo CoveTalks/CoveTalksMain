@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Loader2, Check, CreditCard, User, Mail, Lock, Building2 } from 'lucide-react'
 
