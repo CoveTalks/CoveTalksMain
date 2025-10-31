@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { Linkedin, Mail, Phone, MapPin } from 'lucide-react'
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.covetalks.com'
-href={`${appUrl}/auth/login`}
+
 const footerNavigation = {
   quickLinks: [
     { name: 'Home', href: '/' },
