@@ -334,7 +334,7 @@ export default function HowItWorksPage() {
               </Button>
             </Link>
             <Link href="/register?type=organization">
-              <Button size="xl" variant="outline" className="border-white text-white hover:bg-white hover:text-deep">
+              <Button size="xl" variant="outline" className="border-white text-accent hover:bg-white hover:text-deep">
                 Join as an Organization
               </Button>
             </Link>
