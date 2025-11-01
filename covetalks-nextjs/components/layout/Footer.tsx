@@ -8,7 +8,6 @@ const footerNavigation = {
   quickLinks: [
     { name: 'Home', href: '/' },
     { name: 'Find Speakers', href: '/speakers' },
-    { name: 'Browse Opportunities', href: '/opportunities' },
     { name: 'Register', href: '/register' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'About Us', href: '/about' },
@@ -23,7 +22,7 @@ const footerNavigation = {
   forSpeakers: [
     { name: 'Become a Speaker', href: '/register?type=speaker' },
     { name: 'Find Opportunities', href: '/opportunities' },
-    { name: 'Speaker Resources', href: '/resources/speaker-tips' },
+    { name: 'Browse Opportunities', href: '/opportunities' },
     { name: 'Speaker Plans', href: '/pricing#speakers' },
     { name: 'Success Stories', href: '/success-stories' },
   ],
