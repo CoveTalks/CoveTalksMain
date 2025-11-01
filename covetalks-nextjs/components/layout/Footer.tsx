@@ -17,7 +17,7 @@ const footerNavigation = {
     { name: 'Post Speaking Opportunity', href: `${appUrl}/opportunities/create`},
     { name: 'Browse Speakers', href: '/speakers' },
     { name: 'Organization Plans', href: '/pricing#organizations' },
-    { name: 'Organization Guide', href: '/resources/organization-guide' },
+    { name: 'Organization Guide', href: '/help' },
   ],
   forSpeakers: [
     { name: 'Become a Speaker', href: '/register?type=speaker' },
