@@ -27,7 +27,6 @@ const footerNavigation = {
     { name: 'Success Stories', href: '/success-stories' },
   ],
   support: [
-    { name: 'Help Center', href: '/help' },
     { name: 'FAQ', href: '/faq' },
     { name: 'Contact Us', href: '/contact' },
     { name: 'Privacy Policy', href: '/privacy' },
