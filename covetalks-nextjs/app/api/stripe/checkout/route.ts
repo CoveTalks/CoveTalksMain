@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 
 // Use API version compatible with stripe@14.14.0
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',  // ✅ Stripe 14.14.0 only supports this version
+  apiVersion: '2023-10-16',
 })
 
 export async function POST(request: NextRequest) {
@@ -17,24 +17,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Build URLs with proper scheme
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+    // Updated URLs to point to production
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://covetalks.com'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.covetalks.com'
     
     // Ensure URLs have proper scheme
     const getFullUrl = (url: string | undefined, defaultPath: string, baseUrl: string) => {
       if (!url) {
         return `${baseUrl}${defaultPath}`
       }
-      // If URL already has scheme, use it
       if (url.startsWith('http://') || url.startsWith('https://')) {
         return url
       }
-      // If it's a path, prepend base URL
       if (url.startsWith('/')) {
         return `${baseUrl}${url}`
       }
-      // Otherwise, it's probably missing scheme
       return `${baseUrl}/${url}`
     }
 
@@ -66,10 +63,9 @@ export async function POST(request: NextRequest) {
       customer_email: customerEmail,
       metadata: metadata || {},
       subscription_data: {
-        // No trial period - immediate payment
         metadata: metadata || {},
       },
-      allow_promotion_codes: true, // Allow discount codes
+      allow_promotion_codes: true,
     })
 
     return NextResponse.json({ 
@@ -103,10 +99,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://covetalks.com'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.covetalks.com'
 
-    // Include token in success URL
+    // Include token in success URL - this redirects to app after payment
     const successUrl = token 
       ? `${appUrl}/auth/auto-login?token=${token}&fromStripe=true&session_id={CHECKOUT_SESSION_ID}`
       : `${appUrl}/onboarding?success=true&session_id={CHECKOUT_SESSION_ID}`
@@ -128,10 +124,11 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Redirect to Stripe Checkout
     return NextResponse.redirect(session.url!)
   } catch (error: any) {
     console.error('Stripe checkout error:', error)
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://covetalks.com'
     return NextResponse.redirect(`${baseUrl}/register?error=checkout_failed`)
   }
 }
