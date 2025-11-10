@@ -99,7 +99,7 @@ export default function Header() {
               </div>
             ) : (
               <>
-                <Link href={`${appUrl}/auth/login`}>
+                <Link href={`${appUrl}/`}>
                   <Button variant="ghost">Login</Button>
                 </Link>
                 <Link href="/register">
@@ -174,7 +174,7 @@ export default function Header() {
                 ) : (
                   <>
                     <Link
-                      href={`${appUrl}/auth/login`}
+                      href={`${appUrl}/`}
                       className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
                       onClick={() => setMobileMenuOpen(false)}
                     >
