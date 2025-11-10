@@ -128,7 +128,7 @@ export default function SpeakersPage() {
             Browse our curated network of professional speakers
           </p>
           <p className="text-sm text-gray-500">
-            Sign up for a free account to view full profiles and contact speakers
+            Sign up for a Organization account to view full profiles and contact speakers
           </p>
         </div>
 

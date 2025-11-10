@@ -160,7 +160,7 @@ export default function OpportunitiesPage() {
             Find your next speaking engagement
           </p>
           <p className="text-sm text-gray-500">
-            Create a free speaker account to apply to opportunities and connect with organizations
+            Create a Speaker Account to apply to opportunities and connect with organizations
           </p>
         </div>
 

@@ -24,7 +24,7 @@ export default function HomePage() {
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <Link href="/register">
                   <Button size="xl" variant="default" className="bg-accent hover:bg-accent/90 text-black">
-                    Get Started Free
+                    Get Started
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
