@@ -126,7 +126,7 @@ const organizationSteps = [
 const faqs = [
   {
     question: 'How much does it cost to join CoveTalks?',
-    answer: 'Joining CoveTalks is completely free! We offer premium subscriptions with additional features, but you can start finding speakers or opportunities at no cost.',
+    answer: 'Joining CoveTalks is completely free for Non-Profits & Schools! We offer premium subscriptions with additional features, but you can start finding speakers or opportunities at no cost.',
   },
   {
     question: 'How are payments handled?',
