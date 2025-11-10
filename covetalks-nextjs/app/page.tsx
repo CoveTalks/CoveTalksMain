@@ -35,11 +35,7 @@ export default function HomePage() {
                 </Link>
               </div>
               <div className="mt-8 flex items-center gap-8 text-sm">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-accent" />
-                  <span>Free to join</span>
-                </div>
-                <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-accent" />
                   <span>1000+ Speakers</span>
                 </div>
