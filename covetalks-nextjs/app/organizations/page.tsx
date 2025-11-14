@@ -263,8 +263,8 @@ export default function OrganizationsPage() {
         ) : organizations.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {organizations.map((org) => (
-              <div key={org.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow">
-                <div className="p-6">
+              <div key={org.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow h-full flex flex-col">
+                <div className="p-6 flex flex-col flex-grow">
                   {/* Logo */}
                   <div className="flex items-center justify-center mb-4">
                     {org.logo_url ? (
@@ -354,6 +354,9 @@ export default function OrganizationsPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Flexible spacer to push button to bottom */}
+                  <div className="flex-grow"></div>
 
                   {/* View Profile Button - Points to app subdomain */}
                   <a
