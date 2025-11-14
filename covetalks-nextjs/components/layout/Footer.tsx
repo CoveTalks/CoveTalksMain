@@ -21,7 +21,7 @@ const footerNavigation = {
   ],
   forSpeakers: [
     { name: 'Become a Speaker', href: '/register?type=speaker' },
-    { name: 'Find Opportunities', href: '/opportunities' },
+    { name: 'Find Organizations', href: '/organizations' },
     { name: 'Browse Opportunities', href: '/opportunities' },
     { name: 'Speaker Plans', href: '/pricing#speakers' },
     { name: 'Success Stories', href: '/success-stories' },
