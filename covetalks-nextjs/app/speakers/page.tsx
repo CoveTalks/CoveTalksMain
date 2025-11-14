@@ -235,8 +235,8 @@ export default function SpeakersPage() {
         ) : speakers.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {speakers.map((speaker) => (
-              <div key={speaker.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow">
-                <div className="p-6">
+              <div key={speaker.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow h-full flex flex-col">
+                <div className="p-6 flex flex-col flex-grow">
                   {/* Profile Image */}
                   <div className="flex justify-center mb-4">
                     {speaker.profile_image_url ? (
@@ -302,6 +302,9 @@ export default function SpeakersPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Flexible spacer to push button to bottom */}
+                  <div className="flex-grow"></div>
 
                   {/* View Profile Button - Now points to app subdomain */}
                   <a
