@@ -11,7 +11,7 @@ export async function GET(
     // Get article
     const { data: article, error } = await supabase
       .from('published_articles')
-      .select('*, author_bio:article_authors(bio)')
+      .select('*')
       .eq('slug', params.slug)
       .single()
 
@@ -21,6 +21,13 @@ export async function GET(
         { status: 404 }
       )
     }
+
+    // Get author bio
+    const { data: authorData } = await supabase
+      .from('article_authors')
+      .select('bio')
+      .eq('id', article.author_id)
+      .single()
 
     // Get related articles
     const { data: relatedArticles } = await supabase
@@ -38,9 +45,9 @@ export async function GET(
     return NextResponse.json({
       article: {
         ...article,
-        author_bio: article.author_bio?.[0]?.bio
+        author_bio: authorData?.bio
       },
-      relatedArticles
+      relatedArticles: relatedArticles || []
     })
   } catch (error) {
     console.error('Error fetching article:', error)
