@@ -1,10 +1,13 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { 
   UserPlus, Search, MessageSquare, Calendar, Star, CreditCard,
   Building, FileText, Users, Filter, Send, Briefcase,
-  CheckCircle, ArrowRight, PlayCircle
+  CheckCircle, ArrowRight, PlayCircle, X
 } from 'lucide-react'
 
 const speakerSteps = [
@@ -142,9 +145,56 @@ const faqs = [
   },
 ]
 
+// Video Modal Component
+function VideoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Modal Content */}
+      <div className="relative z-10 w-full max-w-5xl mx-4">
+        <div className="bg-white rounded-xl shadow-xl overflow-hidden">
+                   
+          {/* Video Container */}
+          <div className="relative bg-black aspect-video">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
+            <video
+              controls
+              autoPlay
+              className="w-full h-full"
+              src="/assets/Amplify_Your_Voice_with_CoveTalks.mp4"
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function HowItWorksPage() {
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
+
   return (
     <div className="min-h-screen">
+      {/* Video Modal */}
+      <VideoModal 
+        isOpen={isVideoModalOpen} 
+        onClose={() => setIsVideoModalOpen(false)} 
+      />
+
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-deep via-calm to-deep py-20">
         <div className="container">
@@ -157,7 +207,11 @@ export default function HowItWorksPage() {
               we've made the process simple, secure, and successful.
             </p>
             <div className="flex items-center justify-center gap-4">
-              <Button size="lg" className="bg-white text-deep hover:bg-gray-100">
+              <Button 
+                size="lg" 
+                className="bg-white text-deep hover:bg-gray-100"
+                onClick={() => setIsVideoModalOpen(true)}
+              >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 Watch Demo
               </Button>
