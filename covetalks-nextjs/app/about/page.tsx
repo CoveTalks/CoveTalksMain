@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Users, Target, Heart, Shield, Zap, Globe, CheckCircle, ArrowRight } from 'lucide-react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const values = [
   {
