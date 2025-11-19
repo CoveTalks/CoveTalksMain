@@ -228,7 +228,7 @@ export default function ArticlesClientWrapper({
             <input
               type="text"
               placeholder="Search articles..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep focus:border-transparent"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -247,71 +247,106 @@ export default function ArticlesClientWrapper({
 
           {/* Filters */}
           {showFilters && (
-            <div className="mt-6 grid md:grid-cols-3 gap-4">
-              {/* Category Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep-500"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  <option value="all">All Categories</option>
-                  {initialCategories.map(category => (
-                    <option key={category.id} value={category.slug}>
-                      {category.name} ({category.article_count})
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <>
+              <div className="mt-6 grid md:grid-cols-3 gap-4">
+                {/* Category Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                  >
+                    <option value="all">All Categories</option>
+                    {initialCategories.map(category => (
+                      <option key={category.id} value={category.slug}>
+                        {category.name} ({category.article_count})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Length Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Clock className="inline h-4 w-4 mr-1" />
-                  Reading Time
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep-500"
-                  value={selectedLength}
-                  onChange={(e) => setSelectedLength(e.target.value)}
-                >
-                  {ARTICLE_LENGTH_FILTERS.map(filter => (
-                    <option key={filter.value} value={filter.value}>
-                      {filter.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Length Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Clock className="inline h-4 w-4 mr-1" />
+                    Reading Time
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep"
+                    value={selectedLength}
+                    onChange={(e) => setSelectedLength(e.target.value)}
+                  >
+                    {ARTICLE_LENGTH_FILTERS.map(filter => (
+                      <option key={filter.value} value={filter.value}>
+                        {filter.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Date Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="inline h-4 w-4 mr-1" />
-                  Published
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep-500"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                >
-                  {DATE_FILTERS.map(filter => (
-                    <option key={filter.value} value={filter.value}>
-                      {filter.label}
-                    </option>
-                  ))}
-                </select>
+                {/* Date Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Published
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                  >
+                    {DATE_FILTERS.map(filter => (
+                      <option key={filter.value} value={filter.value}>
+                        {filter.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+              
+              {/* Clear Filters Button */}
+              {isFiltered && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => {
+                      setSearchQuery('')
+                      setSelectedCategory('all')
+                      setSelectedLength('all')
+                      setSelectedDate('all')
+                    }}
+                    className="text-sm text-deep hover:text-deep/80 font-medium flex items-center gap-1"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Clear all filters
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
         {/* Results Count */}
         {isFiltered && (
-          <div className="mb-6 text-gray-600">
-            Showing {filteredCount} of {totalCount} articles
+          <div className="mb-6 flex items-center justify-between">
+            <span className="text-gray-600">
+              Showing {filteredCount} of {totalCount} articles
+            </span>
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setSelectedCategory('all')
+                setSelectedLength('all')
+                setSelectedDate('all')
+              }}
+              className="text-sm text-deep hover:text-deep/80 font-medium"
+            >
+              Clear filters
+            </button>
           </div>
         )}
 
@@ -326,7 +361,7 @@ export default function ArticlesClientWrapper({
                 setSelectedLength('all')
                 setSelectedDate('all')
               }}
-              className="mt-4 text-deep-600 hover:text-deep-700 font-medium"
+              className="mt-4 text-deep hover:text-deep/80 font-medium"
             >
               Clear all filters
             </button>
@@ -337,7 +372,7 @@ export default function ArticlesClientWrapper({
             {pinnedArticles.length > 0 && (
               <div className="mb-12">
                 <div className="flex items-center gap-2 mb-6">
-                  <TrendingUp className="h-5 w-5 text-deep-600" />
+                  <TrendingUp className="h-5 w-5 text-deep" />
                   <h2 className="text-2xl font-bold text-gray-900">Pinned Articles</h2>
                 </div>
                 {pinnedArticles.map(article => (
@@ -378,7 +413,7 @@ export default function ArticlesClientWrapper({
                 <button
                   onClick={loadMoreArticles}
                   disabled={isLoading}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-deep text-white font-semibold rounded-lg hover:bg-calm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-deep text-white font-semibold rounded-lg hover:bg-deep/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <>
@@ -435,8 +470,8 @@ function ArticleCardLarge({ article, formatDate }: { article: Article, formatDat
                 priority
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-deep-50 to-deep-100 flex items-center justify-center">
-                <TrendingUp className="h-24 w-24 text-deep-300" />
+              <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                <TrendingUp className="h-24 w-24 text-blue-300" />
               </div>
             )}
           </div>
@@ -456,11 +491,11 @@ function ArticleCardLarge({ article, formatDate }: { article: Article, formatDat
                 {article.reading_time_minutes} min read
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3 hover:text-deep-600 transition-colors">
+            <h3 className="text-2xl font-bold text-gray-900 mb-3 hover:text-deep transition-colors">
               {article.title}
             </h3>
             <p className="text-gray-600 mb-4 line-clamp-3">{article.excerpt}</p>
-            <div className="flex items-center text-deep-600 font-medium">
+            <div className="flex items-center text-deep font-medium">
               Read More
               <ChevronRight className="h-5 w-5 ml-1" />
             </div>
@@ -486,8 +521,8 @@ function ArticleCardMedium({ article, formatDate }: { article: Article, formatDa
               sizes="(max-width: 768px) 100vw, 50vw"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-deep-50 to-deep-100 flex items-center justify-center rounded-t-lg">
-              <TrendingUp className="h-16 w-16 text-deep-300" />
+            <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center rounded-t-lg">
+              <TrendingUp className="h-16 w-16 text-blue-300" />
             </div>
           )}
         </div>
@@ -507,11 +542,11 @@ function ArticleCardMedium({ article, formatDate }: { article: Article, formatDa
               {article.reading_time_minutes} min
             </span>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2 hover:text-deep-600 transition-colors">
+          <h3 className="text-xl font-bold text-gray-900 mb-2 hover:text-deep transition-colors">
             {article.title}
           </h3>
           <p className="text-gray-600 mb-4 line-clamp-2 flex-grow">{article.excerpt}</p>
-          <div className="flex items-center text-deep-600 font-medium text-sm">
+          <div className="flex items-center text-deep font-medium text-sm">
             Read More
             <ChevronRight className="h-4 w-4 ml-1" />
           </div>
@@ -555,7 +590,7 @@ function ArticleCard({ article, formatDate }: { article: Article, formatDate: (d
               {article.reading_time_minutes} min
             </span>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2 hover:text-deep-600 transition-colors line-clamp-2">
+          <h3 className="text-lg font-bold text-gray-900 mb-2 hover:text-deep transition-colors line-clamp-2">
             {article.title}
           </h3>
           <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">{article.excerpt}</p>
@@ -563,7 +598,7 @@ function ArticleCard({ article, formatDate }: { article: Article, formatDate: (d
             <time dateTime={article.published_at} className="text-gray-500">
               {formatDate(article.published_at)}
             </time>
-            <span className="text-deep-600 font-medium flex items-center">
+            <span className="text-deep font-medium flex items-center">
               Read
               <ChevronRight className="h-4 w-4 ml-1" />
             </span>
