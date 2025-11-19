@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Search, Filter, Calendar, Clock, ChevronRight, TrendingUp } from 'lucide-react'
+import { useState, useMemo, useCallback } from 'react'
+import { Search, Filter, Calendar, Clock, ChevronRight, TrendingUp, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr'
 
 interface Article {
   id: string
@@ -36,6 +38,10 @@ interface Category {
 interface Props {
   initialArticles: Article[]
   initialCategories: Category[]
+  currentPage: number
+  totalPages: number
+  totalCount: number
+  articlesPerPage: number
 }
 
 const ARTICLE_LENGTH_FILTERS = [
@@ -53,16 +59,80 @@ const DATE_FILTERS = [
   { label: 'Last Year', value: 'year', days: 365 }
 ]
 
-export default function ArticlesClientWrapper({ initialArticles, initialCategories }: Props) {
+export default function ArticlesClientWrapper({
+  initialArticles,
+  initialCategories,
+  currentPage,
+  totalPages,
+  totalCount,
+  articlesPerPage
+}: Props) {
+  const router = useRouter()
+  const [allArticles, setAllArticles] = useState<Article[]>(initialArticles)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedLength, setSelectedLength] = useState('all')
   const [selectedDate, setSelectedDate] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadedPages, setLoadedPages] = useState<number[]>([currentPage])
 
-  // Use useMemo to optimize filtering - only recalculates when dependencies change
+  // Load more articles via client-side fetch
+  const loadMoreArticles = useCallback(async () => {
+    const nextPage = Math.max(...loadedPages) + 1
+    
+    if (nextPage > totalPages || isLoading) return
+
+    setIsLoading(true)
+
+    try {
+      // Initialize Supabase client for browser
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      // Get pinned and featured IDs to exclude
+      const { data: pinnedFeatured } = await supabase
+        .from('published_articles')
+        .select('id')
+        .or('is_pinned.eq.true,is_featured.eq.true')
+      
+      const excludeIds = (pinnedFeatured || []).map((a: { id: string }) => a.id)
+      
+      // Calculate offset for regular articles only
+      const offset = (nextPage - 1) * articlesPerPage
+      
+      // Fetch next page
+      let query = supabase
+        .from('published_articles')
+        .select('*')
+        .order('published_at', { ascending: false })
+        .range(offset, offset + articlesPerPage - 1)
+      
+      if (excludeIds.length > 0) {
+        query = query.not('id', 'in', `(${excludeIds.join(',')})`)
+      }
+      
+      const { data: newArticles } = await query
+      
+      if (newArticles && newArticles.length > 0) {
+        setAllArticles(prev => [...prev, ...newArticles])
+        setLoadedPages(prev => [...prev, nextPage])
+        
+        // Update URL without page reload (for user experience)
+        window.history.pushState({}, '', `/articles?page=${nextPage}`)
+      }
+    } catch (error) {
+      console.error('Error loading more articles:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [loadedPages, totalPages, articlesPerPage, isLoading])
+
+  // Filter articles based on search and filters
   const filteredArticles = useMemo(() => {
-    return initialArticles.filter(article => {
+    return allArticles.filter(article => {
       // Search filter
       if (searchQuery) {
         const searchLower = searchQuery.toLowerCase()
@@ -105,17 +175,37 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
 
       return true
     })
-  }, [initialArticles, searchQuery, selectedCategory, selectedLength, selectedDate])
+  }, [allArticles, searchQuery, selectedCategory, selectedLength, selectedDate])
 
   // Separate pinned, featured, and regular articles
   const pinnedArticles = filteredArticles.filter(a => a.is_pinned)
-  const featuredArticles = filteredArticles.filter(a => !a.is_pinned && a.is_featured)
-  const regularArticles = filteredArticles.filter(a => !a.is_pinned && !a.is_featured)
+  
+  // Get all featured articles (not pinned)
+  const allFeaturedArticles = filteredArticles.filter(a => !a.is_pinned && a.is_featured)
+  
+  // Limit featured section to first 6 articles
+  const featuredArticles = allFeaturedArticles.slice(0, 6)
+  
+  // Regular articles = non-pinned, non-featured + featured articles beyond the first 6
+  const remainingFeaturedArticles = allFeaturedArticles.slice(6)
+  const pureRegularArticles = filteredArticles.filter(a => !a.is_pinned && !a.is_featured)
+  
+  // Combine remaining featured with regular articles and sort by date
+  const regularArticles = [...remainingFeaturedArticles, ...pureRegularArticles].sort((a, b) => {
+    return new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+  })
+
+  // Check if there are more articles to load
+  const hasMoreArticles = loadedPages.length < totalPages && !searchQuery && selectedCategory === 'all' && selectedLength === 'all' && selectedDate === 'all'
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
+
+  // Show filtered count message
+  const isFiltered = searchQuery || selectedCategory !== 'all' || selectedLength !== 'all' || selectedDate !== 'all'
+  const filteredCount = filteredArticles.length
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -138,7 +228,7 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
             <input
               type="text"
               placeholder="Search articles..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep-500 focus:border-transparent"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -164,7 +254,7 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
                   Category
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep-500"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
@@ -184,7 +274,7 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
                   Reading Time
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep-500"
                   value={selectedLength}
                   onChange={(e) => setSelectedLength(e.target.value)}
                 >
@@ -203,7 +293,7 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
                   Published
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-deep-500"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
                 >
@@ -216,59 +306,19 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
               </div>
             </div>
           )}
-
-          {/* Active Filters Display */}
-          {(selectedCategory !== 'all' || selectedLength !== 'all' || selectedDate !== 'all' || searchQuery) && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {searchQuery && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                  Search: {searchQuery}
-                  <button onClick={() => setSearchQuery('')} className="ml-2">×</button>
-                </span>
-              )}
-              {selectedCategory !== 'all' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                  Category: {initialCategories.find(c => c.slug === selectedCategory)?.name}
-                  <button onClick={() => setSelectedCategory('all')} className="ml-2">×</button>
-                </span>
-              )}
-              {selectedLength !== 'all' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                  {ARTICLE_LENGTH_FILTERS.find(f => f.value === selectedLength)?.label}
-                  <button onClick={() => setSelectedLength('all')} className="ml-2">×</button>
-                </span>
-              )}
-              {selectedDate !== 'all' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                  {DATE_FILTERS.find(f => f.value === selectedDate)?.label}
-                  <button onClick={() => setSelectedDate('all')} className="ml-2">×</button>
-                </span>
-              )}
-              <button
-                onClick={() => {
-                  setSearchQuery('')
-                  setSelectedCategory('all')
-                  setSelectedLength('all')
-                  setSelectedDate('all')
-                }}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                Clear all
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-gray-600">
-            Showing {filteredArticles.length} article{filteredArticles.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+        {isFiltered && (
+          <div className="mb-6 text-gray-600">
+            Showing {filteredCount} of {totalCount} articles
+          </div>
+        )}
 
+        {/* No Results Message */}
         {filteredArticles.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-            <p className="text-gray-600 text-lg mb-4">No articles found matching your criteria.</p>
+          <div className="text-center py-12">
+            <p className="text-xl text-gray-600">No articles found matching your criteria.</p>
             <button
               onClick={() => {
                 setSearchQuery('')
@@ -276,7 +326,7 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
                 setSelectedLength('all')
                 setSelectedDate('all')
               }}
-              className="text-blue-600 hover:text-blue-800 font-medium"
+              className="mt-4 text-deep-600 hover:text-deep-700 font-medium"
             >
               Clear all filters
             </button>
@@ -287,7 +337,7 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
             {pinnedArticles.length > 0 && (
               <div className="mb-12">
                 <div className="flex items-center gap-2 mb-6">
-                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  <TrendingUp className="h-5 w-5 text-deep-600" />
                   <h2 className="text-2xl font-bold text-gray-900">Pinned Articles</h2>
                 </div>
                 {pinnedArticles.map(article => (
@@ -321,6 +371,46 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
                 </div>
               </div>
             )}
+
+            {/* Load More Button - Hidden for SEO, Styled for Users */}
+            {hasMoreArticles && (
+              <div className="mt-12 text-center">
+                <button
+                  onClick={loadMoreArticles}
+                  disabled={isLoading}
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-deep text-white font-semibold rounded-lg hover:bg-calm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      Load More Articles
+                      <ChevronRight className="h-5 w-5" />
+                    </>
+                  )}
+                </button>
+                
+                {/* Hidden crawlable pagination links for SEO */}
+                <div className="sr-only" aria-hidden="true">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <Link key={page} href={`/articles?page=${page}`}>
+                      Page {page}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pagination info */}
+            {!hasMoreArticles && !isFiltered && (
+              <div className="mt-12 text-center text-gray-600">
+                <p>You've reached the end of our articles</p>
+                <p className="text-sm mt-2">Showing all {totalCount} articles</p>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -328,14 +418,11 @@ export default function ArticlesClientWrapper({ initialArticles, initialCategori
   )
 }
 
-// Article card components remain the same...
-// (Include ArticleCardLarge, ArticleCardMedium, ArticleCard from original file)
-
 // Large card for pinned articles
 function ArticleCardLarge({ article, formatDate }: { article: Article, formatDate: (date: string) => string }) {
   return (
     <Link href={`/articles/${article.slug}`} className="block mb-8">
-      <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden">
+      <article className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden">
         <div className="md:flex">
           <div className="md:w-2/5 relative h-64 md:h-auto">
             {article.featured_image_url ? (
@@ -348,8 +435,8 @@ function ArticleCardLarge({ article, formatDate }: { article: Article, formatDat
                 priority
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-                <TrendingUp className="h-24 w-24 text-blue-300" />
+              <div className="w-full h-full bg-gradient-to-br from-deep-50 to-deep-100 flex items-center justify-center">
+                <TrendingUp className="h-24 w-24 text-deep-300" />
               </div>
             )}
           </div>
@@ -361,23 +448,25 @@ function ArticleCardLarge({ article, formatDate }: { article: Article, formatDat
               >
                 {article.category_name}
               </span>
-              <span className="text-sm text-gray-500">{formatDate(article.published_at)}</span>
+              <time dateTime={article.published_at} className="text-sm text-gray-500">
+                {formatDate(article.published_at)}
+              </time>
               <span className="text-sm text-gray-500 flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
                 {article.reading_time_minutes} min read
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3 hover:text-blue-600 transition-colors">
+            <h3 className="text-2xl font-bold text-gray-900 mb-3 hover:text-deep-600 transition-colors">
               {article.title}
             </h3>
             <p className="text-gray-600 mb-4 line-clamp-3">{article.excerpt}</p>
-            <div className="flex items-center text-blue-600 font-medium">
+            <div className="flex items-center text-deep-600 font-medium">
               Read More
               <ChevronRight className="h-5 w-5 ml-1" />
             </div>
           </div>
         </div>
-      </div>
+      </article>
     </Link>
   )
 }
@@ -386,7 +475,7 @@ function ArticleCardLarge({ article, formatDate }: { article: Article, formatDat
 function ArticleCardMedium({ article, formatDate }: { article: Article, formatDate: (date: string) => string }) {
   return (
     <Link href={`/articles/${article.slug}`} className="block h-full">
-      <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow h-full flex flex-col">
+      <article className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow h-full flex flex-col">
         <div className="relative h-48">
           {article.featured_image_url ? (
             <Image
@@ -397,8 +486,8 @@ function ArticleCardMedium({ article, formatDate }: { article: Article, formatDa
               sizes="(max-width: 768px) 100vw, 50vw"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center rounded-t-lg">
-              <TrendingUp className="h-16 w-16 text-blue-300" />
+            <div className="w-full h-full bg-gradient-to-br from-deep-50 to-deep-100 flex items-center justify-center rounded-t-lg">
+              <TrendingUp className="h-16 w-16 text-deep-300" />
             </div>
           )}
         </div>
@@ -410,22 +499,24 @@ function ArticleCardMedium({ article, formatDate }: { article: Article, formatDa
             >
               {article.category_name}
             </span>
-            <span className="text-gray-500">{formatDate(article.published_at)}</span>
+            <time dateTime={article.published_at} className="text-gray-500">
+              {formatDate(article.published_at)}
+            </time>
             <span className="text-gray-500 flex items-center">
               <Clock className="h-3 w-3 mr-1" />
               {article.reading_time_minutes} min
             </span>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2 hover:text-blue-600 transition-colors">
+          <h3 className="text-xl font-bold text-gray-900 mb-2 hover:text-deep-600 transition-colors">
             {article.title}
           </h3>
           <p className="text-gray-600 mb-4 line-clamp-2 flex-grow">{article.excerpt}</p>
-          <div className="flex items-center text-blue-600 font-medium text-sm">
+          <div className="flex items-center text-deep-600 font-medium text-sm">
             Read More
             <ChevronRight className="h-4 w-4 ml-1" />
           </div>
         </div>
-      </div>
+      </article>
     </Link>
   )
 }
@@ -434,7 +525,7 @@ function ArticleCardMedium({ article, formatDate }: { article: Article, formatDa
 function ArticleCard({ article, formatDate }: { article: Article, formatDate: (date: string) => string }) {
   return (
     <Link href={`/articles/${article.slug}`} className="block h-full">
-      <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow h-full flex flex-col">
+      <article className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow h-full flex flex-col">
         <div className="relative h-48">
           {article.featured_image_url ? (
             <Image
@@ -443,6 +534,7 @@ function ArticleCard({ article, formatDate }: { article: Article, formatDate: (d
               fill
               className="object-cover rounded-t-lg"
               sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              loading="lazy"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center rounded-t-lg">
@@ -463,19 +555,21 @@ function ArticleCard({ article, formatDate }: { article: Article, formatDate: (d
               {article.reading_time_minutes} min
             </span>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-2 hover:text-blue-600 transition-colors line-clamp-2">
+          <h3 className="text-lg font-bold text-gray-900 mb-2 hover:text-deep-600 transition-colors line-clamp-2">
             {article.title}
           </h3>
           <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">{article.excerpt}</p>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">{formatDate(article.published_at)}</span>
-            <span className="text-blue-600 font-medium flex items-center">
+            <time dateTime={article.published_at} className="text-gray-500">
+              {formatDate(article.published_at)}
+            </time>
+            <span className="text-deep-600 font-medium flex items-center">
               Read
               <ChevronRight className="h-4 w-4 ml-1" />
             </span>
           </div>
         </div>
-      </div>
+      </article>
     </Link>
   )
 }
