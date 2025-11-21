@@ -428,7 +428,7 @@ function RegisterContent() {
               <p className="text-center text-gray-600">
                 Already have an account?{' '}
                 <a 
-                  href={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/login`}
+                  href={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/`}
                   className="text-deep hover:underline"
                 >
                   Sign in
