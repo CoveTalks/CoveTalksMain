@@ -124,7 +124,7 @@ export default function OrganizationsClientWrapper({
               <input
                 type="text"
                 placeholder="Search organizations by name, industry, or description..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-calm focus:border-transparent"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
@@ -134,7 +134,7 @@ export default function OrganizationsClientWrapper({
               onClick={() => setShowFilters(!showFilters)}
               className={`px-6 py-3 border rounded-lg transition-colors ${
                 showFilters || hasActiveFilters
-                  ? 'bg-blue-50 border-blue-500 text-blue-600'
+                  ? 'bg-foam border-calm text-calm'
                   : 'bg-white border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -142,7 +142,7 @@ export default function OrganizationsClientWrapper({
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-deep text-white rounded-lg hover:bg-calm transition-colors"
             >
               Search
             </button>
@@ -172,7 +172,7 @@ export default function OrganizationsClientWrapper({
                   Organization Type
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-calm focus:border-transparent transition-colors"
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
                 >
@@ -191,7 +191,7 @@ export default function OrganizationsClientWrapper({
                   Industry
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-calm focus:border-transparent transition-colors"
                   value={filters.industry}
                   onChange={(e) => handleFilterChange('industry', e.target.value)}
                 >
@@ -212,7 +212,7 @@ export default function OrganizationsClientWrapper({
                 <input
                   type="text"
                   placeholder="City, State, or Country"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-calm focus:border-transparent transition-colors"
                   value={filters.location}
                   onChange={(e) => handleFilterChange('location', e.target.value)}
                 />
@@ -225,33 +225,33 @@ export default function OrganizationsClientWrapper({
         {hasActiveFilters && (
           <div className="mb-6 flex flex-wrap gap-2">
             {filters.type && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-foam text-deep rounded-full text-sm">
                 Type: {filters.type}
                 <button
                   onClick={() => handleFilterChange('type', '')}
-                  className="hover:bg-blue-200 rounded-full p-0.5"
+                  className="hover:bg-calm/10 rounded-full p-0.5 transition-colors"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </span>
             )}
             {filters.industry && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-foam text-deep rounded-full text-sm">
                 Industry: {filters.industry}
                 <button
                   onClick={() => handleFilterChange('industry', '')}
-                  className="hover:bg-blue-200 rounded-full p-0.5"
+                  className="hover:bg-calm/10 rounded-full p-0.5 transition-colors"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </span>
             )}
             {filters.location && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-foam text-deep rounded-full text-sm">
                 Location: {filters.location}
                 <button
                   onClick={() => handleFilterChange('location', '')}
-                  className="hover:bg-blue-200 rounded-full p-0.5"
+                  className="hover:bg-calm/10 rounded-full p-0.5 transition-colors"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -287,7 +287,7 @@ export default function OrganizationsClientWrapper({
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-6 py-2 bg-deep text-white rounded-lg hover:bg-calm transition-colors"
               >
                 Clear all filters
               </button>
@@ -390,7 +390,7 @@ function OrganizationCard({ organization, appUrl }: { organization: Organization
               {organization.event_types.slice(0, 3).map((type) => (
                 <span
                   key={type}
-                  className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                  className="px-2 py-1 text-xs rounded-full bg-foam text-deep"
                 >
                   {type}
                 </span>
@@ -428,7 +428,7 @@ function OrganizationCard({ organization, appUrl }: { organization: Organization
           href={`${appUrl}/organizations/${organization.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-2 bg-deep text-white rounded-lg hover:bg-calm transition-colors"
         >
           View Full Profile
           <ExternalLink className="h-4 w-4" />

@@ -67,7 +67,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Header Section */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-12">
+          <div className="bg-gradient-to-r from-deep to-calm px-8 py-12">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               {/* Logo */}
               <div className="flex-shrink-0">
@@ -122,7 +122,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
           {/* Content Section */}
           <div className="p-8">
             {/* CTA Banner - Prominent */}
-            <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6">
+            <div className="mb-8 bg-gradient-to-r from-foam to-white border-2 border-calm rounded-lg p-6">
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   Interested in Speaking for {organization.name}?
@@ -135,7 +135,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
                     href={`${appUrl}/organizations/${organization.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-deep text-white rounded-lg hover:bg-calm transition-colors font-semibold text-lg"
                   >
                     View Full Profile
                     <ExternalLink className="h-5 w-5" />
@@ -144,7 +144,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
                     href={`${appUrl}/auth/register?type=speaker`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-lg"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white text-deep border-2 border-deep rounded-lg hover:bg-foam transition-colors font-semibold text-lg"
                   >
                     Sign Up as Speaker
                   </a>
@@ -164,7 +164,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
 
             {/* Mission Statement */}
             {organization.mission_statement && (
-              <div className="mb-8 bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg">
+              <div className="mb-8 bg-foam border-l-4 border-calm p-6 rounded-r-lg">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Mission</h3>
                 <p className="text-gray-700 leading-relaxed italic">
                   {organization.mission_statement}
@@ -177,7 +177,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
               {/* Event Information */}
               <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+                  <Calendar className="h-5 w-5 text-calm" />
                   Event Information
                 </h3>
                 <div className="space-y-3">
@@ -205,7 +205,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
               {/* Organization Information */}
               <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-blue-600" />
+                  <Building2 className="h-5 w-5 text-calm" />
                   Organization Details
                 </h3>
                 <div className="space-y-3">
@@ -224,7 +224,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
                         href={organization.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        className="font-medium text-calm hover:text-deep flex items-center gap-1 transition-colors"
                       >
                         Visit Website
                         <ExternalLink className="h-4 w-4" />
@@ -243,7 +243,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
                   {organization.event_types.map((type, index) => (
                     <span
                       key={index}
-                      className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
+                      className="px-4 py-2 text-sm font-medium rounded-full bg-foam text-deep"
                     >
                       {type}
                     </span>
@@ -287,11 +287,11 @@ export default function OrganizationDetailClient({ organization }: Props) {
             )}
 
             {/* Bottom CTA */}
-            <div className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-8 text-center text-white">
+            <div className="mt-12 bg-gradient-to-r from-deep to-calm rounded-lg p-8 text-center text-white">
               <h2 className="text-2xl font-bold mb-3">
                 Ready to Connect with {organization.name}?
               </h2>
-              <p className="text-blue-100 mb-6 text-lg">
+              <p className="text-foam mb-6 text-lg">
                 Join CoveTalks to unlock the full organization profile, browse speaking opportunities, and start connecting with organizations.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -299,7 +299,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
                   href={`${appUrl}/organizations/${organization.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-lg"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white text-deep rounded-lg hover:bg-foam transition-colors font-semibold text-lg"
                 >
                   View Full Profile
                   <ExternalLink className="h-5 w-5" />
@@ -308,7 +308,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
                   href={`${appUrl}/auth/register?type=speaker`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-semibold text-lg"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-calm text-white rounded-lg hover:bg-deep transition-colors font-semibold text-lg"
                 >
                   Create Free Speaker Account
                 </a>
@@ -321,7 +321,7 @@ export default function OrganizationDetailClient({ organization }: Props) {
         <div className="mt-12 text-center">
           <Link 
             href="/organizations"
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+            className="inline-flex items-center gap-2 text-calm hover:text-deep font-medium transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
             Browse More Organizations
