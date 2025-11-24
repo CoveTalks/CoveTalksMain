@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { NextRequest } from 'next/server'
 
 // Number of organizations per sitemap page
@@ -8,7 +8,17 @@ export const revalidate = 86400 // Revalidate every 24 hours
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    // Create service role client (bypasses RLS)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!, // Service role key
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
     
     // Get page number from query parameter (default to 1)
     const searchParams = request.nextUrl.searchParams
