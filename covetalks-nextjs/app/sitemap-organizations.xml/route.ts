@@ -50,8 +50,25 @@ export async function GET(request: NextRequest) {
     const orgCount = organizations?.length || 0
     console.log(`Organizations sitemap page ${page}: Fetched ${orgCount} organizations (${offset + 1}-${offset + orgCount} of ${totalCount} total)`)
     
-    // Build XML sitemap
+    // Calculate expected vs actual
+    const expectedCount = Math.min(ORGS_PER_PAGE, (totalCount || 0) - offset)
+    const fetchStatus = orgCount === expectedCount ? 'SUCCESS' : 'MISMATCH'
+    
+    // Build XML sitemap with DEBUG info
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<!-- ========================================= -->
+<!-- DEBUG INFORMATION FOR SITEMAP PAGE ${page}     -->
+<!-- ========================================= -->
+<!-- Total Organizations in DB: ${totalCount}       -->
+<!-- Page Number: ${page}                          -->
+<!-- Organizations Per Page: ${ORGS_PER_PAGE}       -->
+<!-- Offset: ${offset}                             -->
+<!-- Limit (range end): ${limit}                   -->
+<!-- Expected to Fetch: ${expectedCount} orgs      -->
+<!-- Actually Fetched: ${orgCount} orgs            -->
+<!-- Status: ${fetchStatus}                        -->
+<!-- Range: ${offset + 1}-${offset + orgCount}     -->
+<!-- ========================================= -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${organizations?.map((org) => `  <url>
     <loc>https://covetalks.com/organizations/${org.id}</loc>
