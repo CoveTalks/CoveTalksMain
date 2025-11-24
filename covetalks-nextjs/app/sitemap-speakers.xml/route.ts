@@ -31,10 +31,11 @@ export async function GET(request: NextRequest) {
     
     console.log(`Speakers sitemap page ${page}: Starting batch fetch for ${SPEAKERS_PER_PAGE} speakers`)
     
-    // Get total count
+    // Get total count of SPEAKERS from members table
     const { count: totalCount } = await supabase
-      .from('speakers')
+      .from('members')
       .select('*', { count: 'exact', head: true })
+      .eq('member_type', 'Speaker')
     
     // Calculate how many batches we need
     const batchesNeeded = Math.ceil(Math.min(SPEAKERS_PER_PAGE, (totalCount || 0) - pageOffset) / BATCH_SIZE)
@@ -50,8 +51,9 @@ export async function GET(request: NextRequest) {
       console.log(`Fetching batch ${batchNum + 1}/${batchesNeeded}: rows ${batchOffset}-${batchLimit}`)
       
       const { data: batchSpeakers, error } = await supabase
-        .from('speakers')
-        .select('id, updated_at, created_at')
+        .from('members')
+        .select('id, slug, updated_at, created_at')
+        .eq('member_type', 'Speaker')
         .order('created_at', { ascending: false })
         .range(batchOffset, batchLimit)
       
@@ -90,7 +92,7 @@ export async function GET(request: NextRequest) {
 <!-- ========================================= -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${allSpeakers.map((speaker) => `  <url>
-    <loc>https://covetalks.com/speakers/${speaker.id}</loc>
+    <loc>https://covetalks.com/speakers/${speaker.slug || speaker.id}</loc>
     <lastmod>${(speaker.updated_at || speaker.created_at || new Date().toISOString()).split('T')[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

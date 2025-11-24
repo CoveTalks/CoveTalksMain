@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const { count: totalCount } = await supabase
       .from('articles')
       .select('*', { count: 'exact', head: true })
-      .eq('published', true)
+      .eq('status', 'published')
       .lte('published_at', new Date().toISOString())
     
     // Calculate how many batches we need
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       const { data: batchArticles, error } = await supabase
         .from('articles')
         .select('slug, updated_at, published_at')
-        .eq('published', true)
+        .eq('status', 'published')
         .lte('published_at', new Date().toISOString())
         .order('published_at', { ascending: false })
         .range(batchOffset, batchLimit)
