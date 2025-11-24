@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
       .select('id, updated_at, created_at')
       .order('created_at', { ascending: false })
       .range(offset, limit)
+      .limit(5000)
     
     if (error) {
       console.error('Error fetching organizations:', error)
