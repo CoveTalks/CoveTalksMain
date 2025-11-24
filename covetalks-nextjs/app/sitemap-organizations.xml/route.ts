@@ -3,6 +3,8 @@ import { NextRequest } from 'next/server'
 
 // Number of organizations per sitemap page
 const ORGS_PER_PAGE = 5000
+// Supabase seems to have a hard limit of 1000 rows per query
+const BATCH_SIZE = 1000
 
 export const revalidate = 86400 // Revalidate every 24 hours
 
@@ -11,7 +13,7 @@ export async function GET(request: NextRequest) {
     // Create service role client (bypasses RLS)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!, // Service role key
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         auth: {
           autoRefreshToken: false,
@@ -25,35 +27,54 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     
     // Calculate offset for pagination
-    const offset = (page - 1) * ORGS_PER_PAGE
-    const limit = offset + ORGS_PER_PAGE - 1 // range() is inclusive
+    const pageOffset = (page - 1) * ORGS_PER_PAGE
     
-    console.log(`Organizations sitemap page ${page}: Fetching orgs ${offset + 1} to ${limit + 1}`)
+    console.log(`Organizations sitemap page ${page}: Starting batch fetch for ${ORGS_PER_PAGE} orgs`)
     
     // Get total count
     const { count: totalCount } = await supabase
       .from('organizations')
       .select('*', { count: 'exact', head: true })
     
-    // Fetch organizations for this page using range
-    const { data: organizations, error } = await supabase
-      .from('organizations')
-      .select('id, updated_at, created_at')
-      .order('created_at', { ascending: false })
-      .range(offset, limit)
-      .limit(5000)
+    // Calculate how many batches we need
+    const batchesNeeded = Math.ceil(ORGS_PER_PAGE / BATCH_SIZE)
+    console.log(`Will fetch ${batchesNeeded} batches of ${BATCH_SIZE} rows each`)
     
-    if (error) {
-      console.error('Error fetching organizations:', error)
-      return new Response('Error fetching organizations', { status: 500 })
+    // Fetch organizations in batches
+    const allOrganizations = []
+    
+    for (let batchNum = 0; batchNum < batchesNeeded; batchNum++) {
+      const batchOffset = pageOffset + (batchNum * BATCH_SIZE)
+      const batchLimit = batchOffset + BATCH_SIZE - 1
+      
+      console.log(`Fetching batch ${batchNum + 1}/${batchesNeeded}: rows ${batchOffset}-${batchLimit}`)
+      
+      const { data: batchOrgs, error } = await supabase
+        .from('organizations')
+        .select('id, updated_at, created_at')
+        .order('created_at', { ascending: false })
+        .range(batchOffset, batchLimit)
+      
+      if (error) {
+        console.error(`Error fetching batch ${batchNum + 1}:`, error)
+        return new Response('Error fetching organizations', { status: 500 })
+      }
+      
+      if (batchOrgs && batchOrgs.length > 0) {
+        allOrganizations.push(...batchOrgs)
+        console.log(`Batch ${batchNum + 1} fetched ${batchOrgs.length} orgs. Total so far: ${allOrganizations.length}`)
+      } else {
+        console.log(`Batch ${batchNum + 1} returned no results, stopping`)
+        break
+      }
     }
     
-    const orgCount = organizations?.length || 0
-    console.log(`Organizations sitemap page ${page}: Fetched ${orgCount} organizations (${offset + 1}-${offset + orgCount} of ${totalCount} total)`)
+    const orgCount = allOrganizations.length
+    console.log(`Organizations sitemap page ${page}: Fetched ${orgCount} organizations total (${pageOffset + 1}-${pageOffset + orgCount} of ${totalCount} total)`)
     
     // Calculate expected vs actual
-    const expectedCount = Math.min(ORGS_PER_PAGE, (totalCount || 0) - offset)
-    const fetchStatus = orgCount === expectedCount ? 'SUCCESS' : 'MISMATCH'
+    const expectedCount = Math.min(ORGS_PER_PAGE, (totalCount || 0) - pageOffset)
+    const fetchStatus = orgCount === expectedCount ? 'SUCCESS' : (orgCount > 0 ? 'PARTIAL' : 'MISMATCH')
     
     // Build XML sitemap with DEBUG info
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -63,15 +84,16 @@ export async function GET(request: NextRequest) {
 <!-- Total Organizations in DB: ${totalCount}       -->
 <!-- Page Number: ${page}                          -->
 <!-- Organizations Per Page: ${ORGS_PER_PAGE}       -->
-<!-- Offset: ${offset}                             -->
-<!-- Limit (range end): ${limit}                   -->
+<!-- Batches Fetched: ${batchesNeeded}              -->
+<!-- Batch Size: ${BATCH_SIZE}                      -->
+<!-- Page Offset: ${pageOffset}                    -->
 <!-- Expected to Fetch: ${expectedCount} orgs      -->
 <!-- Actually Fetched: ${orgCount} orgs            -->
 <!-- Status: ${fetchStatus}                        -->
-<!-- Range: ${offset + 1}-${offset + orgCount}     -->
+<!-- Range: ${pageOffset + 1}-${pageOffset + orgCount} -->
 <!-- ========================================= -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${organizations?.map((org) => `  <url>
+${allOrganizations.map((org) => `  <url>
     <loc>https://covetalks.com/organizations/${org.id}</loc>
     <lastmod>${(org.updated_at || org.created_at || new Date().toISOString()).split('T')[0]}</lastmod>
     <changefreq>weekly</changefreq>
