@@ -72,7 +72,7 @@ const teamMembers = [
 const milestones = [
   { year: '2023', event: 'CoveTalks founded in Phoenix, Arizona' },
   { year: '2024', event: 'Launched virtual event support and payment processing' },
-  { year: '2025, event: 'Introduced AI-powered matching and premium features' },
+  { year: '2025', event: 'Introduced AI-powered matching and premium features' },
 ]
 
 export default function AboutPage() {
