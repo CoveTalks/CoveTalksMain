@@ -39,14 +39,14 @@ const values = [
 const teamMembers = [
   {
     name: 'Wes Waddle',
-    role: 'Chief Exectutive Officer',
+    role: 'Chief Executive Officer',
     bio: 'Former event speaker with 15+ years of experience in the speaking industry.',
     image: 'https://rzunxswrglopenyfpeqq.supabase.co/storage/v1/object/public/avatars/members/1d9931c6-db83-4bbc-989e-326760b68011-1755895607025.jpg',
   },
   {
     name: 'Alicia Weitzel',
     role: 'Chief Operations Officer',
-    bio: 'Operations expert focused on ever changing our global efficency.',
+    bio: 'Operations expert focused on ever-changing our global efficiency.',
     image: 'https://rzunxswrglopenyfpeqq.supabase.co/storage/v1/object/public/avatars/members/62.jpeg',
   },
   {
@@ -70,11 +70,9 @@ const teamMembers = [
 ]
 
 const milestones = [
-  { year: '2020', event: 'CoveTalks founded in Phoenix, Arizona' },
-  { year: '2021', event: 'Reached 100 speakers and 50 organizations' },
-  { year: '2022', event: 'Launched virtual event support and payment processing' },
-  { year: '2023', event: 'Expanded to 1,000+ speakers across 20 countries' },
-  { year: '2024', event: 'Introduced AI-powered matching and premium features' },
+  { year: '2023', event: 'CoveTalks founded in Phoenix, Arizona' },
+  { year: '2024', event: 'Launched virtual event support and payment processing' },
+  { year: '2025, event: 'Introduced AI-powered matching and premium features' },
 ]
 
 export default function AboutPage() {
