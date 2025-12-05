@@ -213,7 +213,7 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-8">
             {teamMembers.map((member) => (
               <div key={member.name} className="text-center">
                 <div className="relative h-48 w-48 mx-auto mb-4 rounded-full overflow-hidden bg-gray-200">
