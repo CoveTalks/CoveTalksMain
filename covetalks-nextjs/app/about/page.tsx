@@ -38,28 +38,34 @@ const values = [
 
 const teamMembers = [
   {
-    name: 'Jane Doe',
-    role: 'CEO & Founder',
-    bio: 'Former event organizer with 15+ years of experience in the speaking industry.',
-    image: '/images/team1.jpg',
+    name: 'Wes Waddle',
+    role: 'Chief Exectutive Officer',
+    bio: 'Former event speaker with 15+ years of experience in the speaking industry.',
+    image: 'https://rzunxswrglopenyfpeqq.supabase.co/storage/v1/object/public/avatars/members/1d9931c6-db83-4bbc-989e-326760b68011-1755895607025.jpg',
   },
   {
-    name: 'John Smith',
-    role: 'CTO',
+    name: 'Alicia Weitzel',
+    role: 'Chief Operations Officer',
+    bio: 'Operations expert focused on ever changing our global efficency.',
+    image: 'https://rzunxswrglopenyfpeqq.supabase.co/storage/v1/object/public/avatars/members/62.jpeg',
+  },
+  {
+    name: 'Josh Anderson',
+    role: 'Chief Technology Officer',
     bio: 'Tech veteran passionate about connecting people through innovative platforms.',
-    image: '/images/team2.jpg',
+    image: 'https://rzunxswrglopenyfpeqq.supabase.co/storage/v1/object/public/avatars/members/4ddf1896-c486-4703-8d6d-4b10acfc86b3-1761668560830.jpg',
   },
   {
-    name: 'Sarah Williams',
-    role: 'Head of Community',
+    name: 'Dwight Lamb',
+    role: 'Chief Growth Officer',
     bio: 'Dedicated to building a thriving community of speakers and organizations.',
-    image: '/images/team3.jpg',
+    image: 'https://rzunxswrglopenyfpeqq.supabase.co/storage/v1/object/public/avatars/members/c52526cf-676e-43e7-9982-fa886a1e4ad0-1760726293496.jpg',
   },
   {
-    name: 'Mike Johnson',
-    role: 'Head of Growth',
+    name: 'Warren Jones',
+    role: 'Chief Marketing Officer',
     bio: 'Marketing expert focused on expanding our reach and impact globally.',
-    image: '/images/team4.jpg',
+    image: 'https://rzunxswrglopenyfpeqq.supabase.co/storage/v1/object/public/avatars/members/1757918225426-uebkdosq1.jpg',
   },
 ]
 
