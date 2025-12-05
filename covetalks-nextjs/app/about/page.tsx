@@ -136,7 +136,7 @@ export default function AboutPage() {
               </div>
               <div className="relative">
                 <Image
-                  src="/images/about-mission.jpg"
+                  src="https://rzunxswrglopenyfpeqq.supabase.co/storage/v1/object/public/avatars/members/ian-schneider-TamMbr4okv4-unsplash.jpg"
                   alt="Our Mission"
                   width={500}
                   height={400}
